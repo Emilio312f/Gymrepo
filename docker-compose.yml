@@ -1,0 +1,46 @@
+# =====================================================================
+# Entorno de desarrollo de GymControl
+#
+#   docker compose up        -> levanta PostgreSQL y aplica las migraciones
+#
+# Con esto el sistema corre idéntico en cualquier PC con Docker,
+# sin el clásico "en mi máquina funciona".
+#
+# NOTA: por ahora un servicio "migrate" aplica las migraciones.
+# En el siguiente paso añadiremos el servicio "backend" (Go), que las
+# correrá él mismo al arrancar (como acordamos).
+# =====================================================================
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: gymcontrol_db
+    environment:
+      POSTGRES_USER: ${DB_USER:-gym}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-gym}
+      POSTGRES_DB: ${DB_NAME:-gymcontrol}
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      # El servicio migrate espera a que la BD esté realmente lista.
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-gym} -d ${DB_NAME:-gymcontrol}"]
+      interval: 3s
+      timeout: 3s
+      retries: 10
+
+  migrate:
+    image: migrate/migrate:v4.17.1
+    container_name: gymcontrol_migrate
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./backend/migrations:/migrations:ro
+    command:
+      - "-path=/migrations"
+      - "-database=postgres://${DB_USER:-gym}:${DB_PASSWORD:-gym}@db:5432/${DB_NAME:-gymcontrol}?sslmode=disable"
+      - "up"
+
+volumes:
+  pgdata:

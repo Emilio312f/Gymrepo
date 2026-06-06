@@ -1,0 +1,21 @@
+# Secretos y entorno
+.env
+
+# Go
+/backend/bin/
+*.exe
+*.test
+*.out
+vendor/
+
+# Flutter / Dart (para el frontend, más adelante)
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+build/
+.packages
+
+# IDE / SO
+.idea/
+.vscode/
+.DS_Store
