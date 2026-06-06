@@ -49,3 +49,23 @@ func (s *Service) Listar(ctx context.Context, gimnasioID string) ([]domain.Socio
 func (s *Service) Obtener(ctx context.Context, gimnasioID, id string) (domain.Socio, error) {
 	return s.repo.Obtener(ctx, gimnasioID, id)
 }
+
+func (s *Service) Actualizar(ctx context.Context, gimnasioID, id string, in EntradaSocio) (domain.Socio, error) {
+	socio := domain.Socio{
+		ID:              id,
+		GimnasioID:      gimnasioID,
+		Nombres:         strings.TrimSpace(in.Nombres),
+		Apellidos:       strings.TrimSpace(in.Apellidos),
+		Documento:       strings.TrimSpace(in.Documento),
+		Telefono:        strings.TrimSpace(in.Telefono),
+		Email:           strings.ToLower(strings.TrimSpace(in.Email)),
+		Sexo:            strings.TrimSpace(in.Sexo),
+		Direccion:       strings.TrimSpace(in.Direccion),
+		FechaNacimiento: strings.TrimSpace(in.FechaNacimiento),
+	}
+	return s.repo.Actualizar(ctx, socio)
+}
+
+func (s *Service) CambiarEstado(ctx context.Context, gimnasioID, id string, activo bool) error {
+	return s.repo.CambiarEstado(ctx, gimnasioID, id, activo)
+}

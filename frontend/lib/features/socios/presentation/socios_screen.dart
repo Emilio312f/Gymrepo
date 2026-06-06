@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/app_theme.dart';
 import '../data/socios_repository.dart';
@@ -91,7 +92,13 @@ class _SocioCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return Material(
+      color: AppColors.superficie,
+      borderRadius: BorderRadius.circular(14),
+      child: InkWell(
+        onTap: () => context.go('/socios/${socio.id}'),
+        borderRadius: BorderRadius.circular(14),
+        child: Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: AppColors.superficie,
@@ -126,6 +133,8 @@ class _SocioCard extends StatelessWidget {
           ),
           _EstadoChip(activo: socio.activo),
         ],
+      ),
+        ),
       ),
     );
   }

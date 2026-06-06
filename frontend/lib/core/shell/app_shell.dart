@@ -105,7 +105,11 @@ class _NavContent extends ConsumerWidget {
               padding: const EdgeInsets.symmetric(vertical: 10),
               children: [
                 for (final m in modulos)
-                  _NavTile(modulo: m, activo: m.ruta == location),
+                  _NavTile(
+                      modulo: m,
+                      activo: m.ruta != null &&
+                          (location == m.ruta ||
+                              location.startsWith('${m.ruta}/'))),
               ],
             ),
           ),

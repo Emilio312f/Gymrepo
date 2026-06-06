@@ -46,3 +46,7 @@ class SociosController extends AsyncNotifier<List<Socio>> {
 
 final sociosControllerProvider =
     AsyncNotifierProvider<SociosController, List<Socio>>(SociosController.new);
+
+final socioDetalleProvider = FutureProvider.family<Socio, String>((ref, id) {
+  return ref.watch(sociosRepositoryProvider).obtener(id);
+});

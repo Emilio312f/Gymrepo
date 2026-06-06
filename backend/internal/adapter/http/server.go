@@ -55,6 +55,9 @@ func NuevoRouter(authH *AuthHandler, sociosH *SociosHandler, docH *DocumentoHand
 				Route("/socios", func(r chi.Router) {
 					r.Get("/", sociosH.Listar)
 					r.Post("/", sociosH.Crear)
+					r.Get("/{id}", sociosH.Obtener)
+					r.Put("/{id}", sociosH.Actualizar)
+					r.Patch("/{id}/estado", sociosH.CambiarEstado)
 				})
 
 			r.With(RequiereRol(string(domain.RolAdmin), string(domain.RolRecepcion))).

@@ -66,6 +66,39 @@ class SociosRepository {
     return lista.map(Socio.fromJson).toList();
   }
 
+  Future<Socio> obtener(String id) async {
+    final resp = await _dio.get('/socios/$id');
+    return Socio.fromJson(resp.data as Map<String, dynamic>);
+  }
+
+  Future<Socio> actualizar({
+    required String id,
+    required String nombres,
+    required String apellidos,
+    required String documento,
+    String telefono = '',
+    String email = '',
+    String sexo = '',
+    String direccion = '',
+    String fechaNacimiento = '',
+  }) async {
+    final resp = await _dio.put('/socios/$id', data: {
+      'nombres': nombres,
+      'apellidos': apellidos,
+      'documento': documento,
+      'telefono': telefono,
+      'email': email,
+      'sexo': sexo,
+      'direccion': direccion,
+      'fecha_nacimiento': fechaNacimiento,
+    });
+    return Socio.fromJson(resp.data as Map<String, dynamic>);
+  }
+
+  Future<void> cambiarEstado(String id, bool activo) async {
+    await _dio.patch('/socios/$id/estado', data: {'activo': activo});
+  }
+
   Future<Socio> crear({
     required String nombres,
     required String apellidos,

@@ -91,3 +91,40 @@ func (r *SociosRepo) Obtener(ctx context.Context, gimnasioID, id string) (domain
 	}
 	return s, nil
 }
+
+func (r *SociosRepo) Actualizar(ctx context.Context, s domain.Socio) (domain.Socio, error) {
+	tag, err := r.pool.Exec(ctx,
+		`UPDATE socio SET
+		   nombres = $3, apellidos = $4, documento = $5,
+		   telefono = NULLIF($6, ''), email = NULLIF($7, ''),
+		   sexo = NULLIF($8, ''), direccion = NULLIF($9, ''),
+		   fecha_nacimiento = NULLIF($10, '')::date
+		 WHERE gimnasio_id = $1 AND id = $2`,
+		s.GimnasioID, s.ID, s.Nombres, s.Apellidos, s.Documento,
+		s.Telefono, s.Email, s.Sexo, s.Direccion, s.FechaNacimiento,
+	)
+	if esViolacionUnica(err) {
+		return domain.Socio{}, domain.ErrSocioDuplicado
+	}
+	if err != nil {
+		return domain.Socio{}, err
+	}
+	if tag.RowsAffected() == 0 {
+		return domain.Socio{}, domain.ErrNoEncontrado
+	}
+	return r.Obtener(ctx, s.GimnasioID, s.ID)
+}
+
+func (r *SociosRepo) CambiarEstado(ctx context.Context, gimnasioID, id string, activo bool) error {
+	tag, err := r.pool.Exec(ctx,
+		`UPDATE socio SET activo = $3 WHERE gimnasio_id = $1 AND id = $2`,
+		gimnasioID, id, activo,
+	)
+	if err != nil {
+		return err
+	}
+	if tag.RowsAffected() == 0 {
+		return domain.ErrNoEncontrado
+	}
+	return nil
+}

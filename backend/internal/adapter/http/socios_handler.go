@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/go-chi/chi/v5"
+
 	"gymcontrol/internal/app/socios"
 	"gymcontrol/internal/domain"
 )
@@ -94,6 +96,86 @@ func (h *SociosHandler) Crear(w http.ResponseWriter, r *http.Request) {
 	}
 
 	escribirJSON(w, http.StatusCreated, aSocioResp(socio))
+}
+
+func (h *SociosHandler) Obtener(w http.ResponseWriter, r *http.Request) {
+	gimnasioID := claimsDe(r.Context()).GimnasioID
+	id := chi.URLParam(r, "id")
+
+	socio, err := h.svc.Obtener(r.Context(), gimnasioID, id)
+	switch {
+	case errors.Is(err, domain.ErrNoEncontrado):
+		escribirError(w, http.StatusNotFound, "socio no encontrado")
+		return
+	case err != nil:
+		escribirError(w, http.StatusInternalServerError, "no se pudo obtener el socio")
+		return
+	}
+	escribirJSON(w, http.StatusOK, aSocioResp(socio))
+}
+
+func (h *SociosHandler) Actualizar(w http.ResponseWriter, r *http.Request) {
+	gimnasioID := claimsDe(r.Context()).GimnasioID
+	id := chi.URLParam(r, "id")
+
+	var req crearSocioReq
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		escribirError(w, http.StatusBadRequest, "JSON inválido")
+		return
+	}
+	if req.Nombres == "" || req.Apellidos == "" || req.Documento == "" {
+		escribirError(w, http.StatusBadRequest, "nombres, apellidos y documento son obligatorios")
+		return
+	}
+
+	socio, err := h.svc.Actualizar(r.Context(), gimnasioID, id, socios.EntradaSocio{
+		Nombres:         req.Nombres,
+		Apellidos:       req.Apellidos,
+		Documento:       req.Documento,
+		Telefono:        req.Telefono,
+		Email:           req.Email,
+		Sexo:            req.Sexo,
+		Direccion:       req.Direccion,
+		FechaNacimiento: req.FechaNacimiento,
+	})
+	switch {
+	case errors.Is(err, domain.ErrNoEncontrado):
+		escribirError(w, http.StatusNotFound, "socio no encontrado")
+		return
+	case errors.Is(err, domain.ErrSocioDuplicado):
+		escribirError(w, http.StatusConflict, "ya existe un socio con ese documento")
+		return
+	case err != nil:
+		escribirError(w, http.StatusInternalServerError, "no se pudo actualizar el socio")
+		return
+	}
+	escribirJSON(w, http.StatusOK, aSocioResp(socio))
+}
+
+type estadoSocioReq struct {
+	Activo bool `json:"activo"`
+}
+
+func (h *SociosHandler) CambiarEstado(w http.ResponseWriter, r *http.Request) {
+	gimnasioID := claimsDe(r.Context()).GimnasioID
+	id := chi.URLParam(r, "id")
+
+	var req estadoSocioReq
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		escribirError(w, http.StatusBadRequest, "JSON inválido")
+		return
+	}
+
+	err := h.svc.CambiarEstado(r.Context(), gimnasioID, id, req.Activo)
+	switch {
+	case errors.Is(err, domain.ErrNoEncontrado):
+		escribirError(w, http.StatusNotFound, "socio no encontrado")
+		return
+	case err != nil:
+		escribirError(w, http.StatusInternalServerError, "no se pudo cambiar el estado")
+		return
+	}
+	escribirJSON(w, http.StatusOK, map[string]bool{"activo": req.Activo})
 }
 
 func (h *SociosHandler) Listar(w http.ResponseWriter, r *http.Request) {
