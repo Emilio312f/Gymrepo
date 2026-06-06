@@ -15,6 +15,8 @@ import (
 	"gymcontrol/internal/adapter/storage/postgres"
 	"gymcontrol/internal/app/auth"
 	"gymcontrol/internal/app/documento"
+	"gymcontrol/internal/app/membresias"
+	"gymcontrol/internal/app/planes"
 	"gymcontrol/internal/app/socios"
 	"gymcontrol/internal/platform/config"
 	"gymcontrol/internal/platform/security"
@@ -41,6 +43,8 @@ func main() {
 	//    las implementaciones concretas en los puertos).
 	authRepo := postgres.NewAuthRepo(pool)
 	sociosRepo := postgres.NewSociosRepo(pool)
+	planesRepo := postgres.NewPlanesRepo(pool)
+	membresiasRepo := postgres.NewMembresiasRepo(pool)
 	hasher := security.NewBcryptHasher()
 	jwt := security.NewJWT(cfg.JWTSecret, cfg.JWTTTL)
 
@@ -48,13 +52,17 @@ func main() {
 
 	authSvc := auth.NewService(authRepo, hasher, jwt)
 	sociosSvc := socios.NewService(sociosRepo)
+	planesSvc := planes.NewService(planesRepo)
+	membresiasSvc := membresias.NewService(membresiasRepo)
 	documentoSvc := documento.NewService(dniCliente)
 
 	authHandler := nethttp.NewAuthHandler(authSvc)
 	sociosHandler := nethttp.NewSociosHandler(sociosSvc)
+	planesHandler := nethttp.NewPlanesHandler(planesSvc)
+	membresiasHandler := nethttp.NewMembresiasHandler(membresiasSvc)
 	documentoHandler := nethttp.NewDocumentoHandler(documentoSvc)
 
-	router := nethttp.NuevoRouter(authHandler, sociosHandler, documentoHandler, jwt)
+	router := nethttp.NuevoRouter(authHandler, sociosHandler, documentoHandler, planesHandler, membresiasHandler, jwt)
 
 	// 4. Servidor HTTP con apagado ordenado.
 	srv := &http.Server{

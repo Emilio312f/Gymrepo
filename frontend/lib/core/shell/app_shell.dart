@@ -18,7 +18,7 @@ class Modulo {
 const List<Modulo> modulos = [
   Modulo('Dashboard', Icons.dashboard_outlined, '/home'),
   Modulo('Socios', Icons.groups_outlined, '/socios'),
-  Modulo('Planes', Icons.card_membership_outlined),
+  Modulo('Planes', Icons.card_membership_outlined, '/planes'),
   Modulo('Pagos', Icons.payments_outlined),
   Modulo('Asistencia', Icons.how_to_reg_outlined),
   Modulo('Personal', Icons.badge_outlined),

@@ -7,6 +7,7 @@ import '../../features/auth/presentation/login_screen.dart';
 import '../../features/home/presentation/home_screen.dart';
 import '../../features/socios/presentation/socios_screen.dart';
 import '../../features/socios/presentation/socio_detalle_screen.dart';
+import '../../features/planes/presentation/planes_screen.dart';
 
 final appRouterProvider = Provider<GoRouter>((ref) {
   return GoRouter(
@@ -32,6 +33,9 @@ final appRouterProvider = Provider<GoRouter>((ref) {
               path: '/socios/:id',
               builder: (context, state) =>
                   SocioDetalleScreen(socioId: state.pathParameters['id']!)),
+          GoRoute(
+              path: '/planes',
+              builder: (context, state) => const PlanesScreen()),
         ],
       ),
     ],

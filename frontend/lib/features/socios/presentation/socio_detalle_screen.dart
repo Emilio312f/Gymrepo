@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/app_theme.dart';
+import '../../membresias/data/membresias_repository.dart';
+import '../../membresias/presentation/registrar_pago_dialog.dart';
 import '../data/socios_repository.dart';
 import 'socios_controller.dart';
 import 'editar_socio_dialog.dart';
@@ -155,28 +157,7 @@ class SocioDetalleScreen extends ConsumerWidget {
                 ],
               ),
               const SizedBox(height: 16),
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(18),
-                decoration: BoxDecoration(
-                  color: AppColors.acentoSuave,
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: const Row(
-                  children: [
-                    Icon(Icons.card_membership_outlined,
-                        color: AppColors.acento),
-                    SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        'La membresía y el estado de pago aparecerán aquí cuando construyamos el módulo de Planes.',
-                        style: TextStyle(
-                            color: AppColors.textoSecundario, fontSize: 13),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+              _MembresiaSeccion(socioId: socio.id),
             ],
           ),
         ),
@@ -237,6 +218,114 @@ class _Seccion extends StatelessWidget {
             if (f != filas.last)
               const Divider(height: 1, color: AppColors.borde),
           ],
+        ],
+      ),
+    );
+  }
+}
+
+class _MembresiaSeccion extends ConsumerWidget {
+  final String socioId;
+
+  const _MembresiaSeccion({required this.socioId});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final estado = ref.watch(estadoMembresiaProvider(socioId));
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: AppColors.superficie,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.borde),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Expanded(
+                child: Text('Membresía',
+                    style:
+                        TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
+              ),
+              FilledButton.icon(
+                onPressed: () => mostrarRegistrarPagoDialog(context, socioId),
+                icon: const Icon(Icons.payments_outlined, size: 18),
+                label: const Text('Registrar pago'),
+                style: FilledButton.styleFrom(minimumSize: const Size(0, 42)),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          estado.when(
+            loading: () => const Padding(
+                padding: EdgeInsets.all(8),
+                child: Center(child: CircularProgressIndicator())),
+            error: (e, _) => const Text('No se pudo cargar la membresía',
+                style: TextStyle(color: AppColors.textoSecundario)),
+            data: (m) {
+              if (!m.tieneMembresia) {
+                return const Text(
+                    'Sin membresía. Registra un pago para activarla.',
+                    style: TextStyle(color: AppColors.textoSecundario));
+              }
+              final color = m.alDia ? AppColors.exito : AppColors.peligro;
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: color.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(m.alDia ? 'AL DÍA' : 'VENCIDO',
+                            style: TextStyle(
+                                color: color,
+                                fontWeight: FontWeight.w700,
+                                fontSize: 13)),
+                      ),
+                      const SizedBox(width: 12),
+                      Text(m.planNombre,
+                          style:
+                              const TextStyle(fontWeight: FontWeight.w600)),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+                  _fila('Vence el', m.fechaFin),
+                  _fila(
+                      m.alDia ? 'Días restantes' : 'Vencida hace',
+                      m.alDia
+                          ? '${m.diasRestantes} días'
+                          : '${-m.diasRestantes} días'),
+                ],
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _fila(String k, String v) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 5),
+      child: Row(
+        children: [
+          SizedBox(
+              width: 180,
+              child: Text(k,
+                  style: const TextStyle(
+                      color: AppColors.textoSecundario, fontSize: 14))),
+          Text(v,
+              style:
+                  const TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
         ],
       ),
     );
