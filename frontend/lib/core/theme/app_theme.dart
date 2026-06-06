@@ -68,6 +68,19 @@ class AppTheme {
           side: const BorderSide(color: AppColors.borde),
         ),
       ),
+      datePickerTheme: DatePickerThemeData(
+        backgroundColor: AppColors.superficie,
+        surfaceTintColor: AppColors.superficie,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        headerBackgroundColor: AppColors.acento,
+        headerForegroundColor: Colors.white,
+      ),
+      dropdownMenuTheme: DropdownMenuThemeData(
+        menuStyle: MenuStyle(
+          backgroundColor: WidgetStatePropertyAll(AppColors.superficie),
+          surfaceTintColor: WidgetStatePropertyAll(AppColors.superficie),
+        ),
+      ),
     );
   }
 }

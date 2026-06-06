@@ -2,10 +2,26 @@ package socios
 
 import (
 	"context"
+	"regexp"
 	"strings"
 
 	"gymcontrol/internal/domain"
 )
+
+var reSoloLetras = regexp.MustCompile(`^[\p{L} ]+$`)
+var reDigitos = regexp.MustCompile(`^[0-9]+$`)
+
+func validarDatos(in EntradaSocio) error {
+	if !reSoloLetras.MatchString(strings.TrimSpace(in.Nombres)) ||
+		!reSoloLetras.MatchString(strings.TrimSpace(in.Apellidos)) {
+		return domain.ErrDatosInvalidos
+	}
+	doc := strings.TrimSpace(in.Documento)
+	if len(doc) != 8 || !reDigitos.MatchString(doc) {
+		return domain.ErrDatosInvalidos
+	}
+	return nil
+}
 
 type Service struct {
 	repo Repositorio
@@ -27,6 +43,9 @@ type EntradaSocio struct {
 }
 
 func (s *Service) Crear(ctx context.Context, gimnasioID string, in EntradaSocio) (domain.Socio, error) {
+	if err := validarDatos(in); err != nil {
+		return domain.Socio{}, err
+	}
 	socio := domain.Socio{
 		GimnasioID:      gimnasioID,
 		Nombres:         strings.TrimSpace(in.Nombres),
@@ -51,6 +70,9 @@ func (s *Service) Obtener(ctx context.Context, gimnasioID, id string) (domain.So
 }
 
 func (s *Service) Actualizar(ctx context.Context, gimnasioID, id string, in EntradaSocio) (domain.Socio, error) {
+	if err := validarDatos(in); err != nil {
+		return domain.Socio{}, err
+	}
 	socio := domain.Socio{
 		ID:              id,
 		GimnasioID:      gimnasioID,

@@ -4,6 +4,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/theme/app_theme.dart';
+import '../../../core/validators.dart';
+import '../../../core/widgets/app_dropdown.dart';
 import '../data/socios_repository.dart';
 import 'socios_controller.dart';
 
@@ -67,22 +69,29 @@ class _EditarSocioDialogState extends ConsumerState<_EditarSocioDialog> {
       '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
 
   Future<void> _elegirFecha() async {
-    final ahora = DateTime.now();
+    final hoy = DateTime.now();
+    final maxima = DateTime(hoy.year - 18, hoy.month, hoy.day);
     final f = await showDatePicker(
       context: context,
-      initialDate: _fechaNacimiento ?? DateTime(ahora.year - 20),
+      initialDate: _fechaNacimiento ?? maxima,
       firstDate: DateTime(1920),
-      lastDate: ahora,
-      helpText: 'Fecha de nacimiento',
+      lastDate: maxima,
+      helpText: 'Fecha de nacimiento (mayor de 18)',
     );
     if (f != null) setState(() => _fechaNacimiento = f);
   }
 
   Future<void> _guardar() async {
-    if (_documento.text.trim().isEmpty ||
-        _nombres.text.trim().isEmpty ||
-        _apellidos.text.trim().isEmpty) {
-      setState(() => _error = 'Documento, nombres y apellidos son obligatorios');
+    final error = Validadores.dni(_documento.text) ??
+        Validadores.nombre(_nombres.text, 'Nombres') ??
+        Validadores.nombre(_apellidos.text, 'Apellidos') ??
+        Validadores.requerido(_sexo ?? '', 'Sexo') ??
+        Validadores.mayorDeEdad(_fechaNacimiento) ??
+        Validadores.requerido(_direccion.text, 'Dirección') ??
+        Validadores.telefono(_telefono.text) ??
+        Validadores.email(_email.text);
+    if (error != null) {
+      setState(() => _error = error);
       return;
     }
     setState(() {
@@ -149,10 +158,9 @@ class _EditarSocioDialogState extends ConsumerState<_EditarSocioDialog> {
                       children: [
                         const _Lbl('Sexo'),
                         const SizedBox(height: 6),
-                        DropdownButtonFormField<String>(
-                          initialValue: _sexo,
-                          decoration:
-                              const InputDecoration(hintText: 'Seleccionar'),
+                        AppDropdown<String>(
+                          value: _sexo,
+                          hint: 'Seleccionar',
                           items: const [
                             DropdownMenuItem(
                                 value: 'M', child: Text('Masculino')),

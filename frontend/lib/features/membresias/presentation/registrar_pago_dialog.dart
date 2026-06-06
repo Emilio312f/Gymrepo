@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/theme/app_theme.dart';
+import '../../../core/widgets/app_dropdown.dart';
 import '../../planes/data/planes_repository.dart';
 import '../../planes/presentation/planes_controller.dart';
 import '../../socios/presentation/socios_controller.dart';
@@ -92,10 +93,9 @@ class _RegistrarPagoDialogState extends ConsumerState<_RegistrarPagoDialog> {
               children: [
                 _lbl('Plan'),
                 const SizedBox(height: 6),
-                DropdownButtonFormField<String>(
-                  initialValue: _planId,
-                  isExpanded: true,
-                  decoration: const InputDecoration(hintText: 'Seleccionar'),
+                AppDropdown<String>(
+                  value: _planId,
+                  hint: 'Seleccionar',
                   items: [
                     for (final Plan p in lista)
                       DropdownMenuItem(
@@ -109,10 +109,8 @@ class _RegistrarPagoDialogState extends ConsumerState<_RegistrarPagoDialog> {
                 const SizedBox(height: 16),
                 _lbl('Método de pago'),
                 const SizedBox(height: 6),
-                DropdownButtonFormField<String>(
-                  initialValue: _metodo,
-                  isExpanded: true,
-                  decoration: const InputDecoration(),
+                AppDropdown<String>(
+                  value: _metodo,
                   items: [
                     for (final e in _metodos.entries)
                       DropdownMenuItem(value: e.key, child: Text(e.value)),

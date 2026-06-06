@@ -17,29 +17,77 @@ class SocioDetalleScreen extends ConsumerWidget {
   Future<void> _cambiarEstado(
       BuildContext context, WidgetRef ref, Socio socio) async {
     final desactivar = socio.activo;
+    final messenger = ScaffoldMessenger.of(context);
     final confirmar = await showDialog<bool>(
       context: context,
-      builder: (_) => AlertDialog(
+      builder: (ctx) => AlertDialog(
         backgroundColor: AppColors.superficie,
-        title: Text(desactivar ? 'Deshabilitar socio' : 'Activar socio'),
-        content: Text(desactivar
-            ? '${socio.nombreCompleto} no podrá acceder, pero su historial se conserva.'
-            : '${socio.nombreCompleto} podrá volver a acceder.'),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text('Cancelar')),
-          FilledButton(
-              onPressed: () => Navigator.pop(context, true),
-              child: const Text('Confirmar')),
-        ],
+        surfaceTintColor: AppColors.superficie,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text(desactivar ? 'Deshabilitar socio' : 'Activar socio',
+            style: const TextStyle(fontWeight: FontWeight.w700)),
+        content: SizedBox(
+          width: 380,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                desactivar
+                    ? '${socio.nombreCompleto} no podrá acceder, pero su historial se conserva.'
+                    : '${socio.nombreCompleto} podrá volver a acceder.',
+                style: const TextStyle(color: AppColors.textoSecundario),
+              ),
+              const SizedBox(height: 24),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.pop(ctx, false),
+                      style: OutlinedButton.styleFrom(
+                        minimumSize: const Size.fromHeight(46),
+                        foregroundColor: AppColors.textoSecundario,
+                        side: const BorderSide(color: AppColors.borde),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10)),
+                      ),
+                      child: const Text('Cancelar'),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: FilledButton(
+                      onPressed: () => Navigator.pop(ctx, true),
+                      style: FilledButton.styleFrom(
+                        minimumSize: const Size.fromHeight(46),
+                        backgroundColor:
+                            desactivar ? AppColors.peligro : AppColors.exito,
+                      ),
+                      child: const Text('Confirmar'),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
       ),
     );
     if (confirmar != true) return;
 
-    await ref.read(sociosRepositoryProvider).cambiarEstado(socio.id, !socio.activo);
-    ref.invalidate(socioDetalleProvider(socio.id));
-    ref.invalidate(sociosControllerProvider);
+    try {
+      await ref
+          .read(sociosRepositoryProvider)
+          .cambiarEstado(socio.id, !socio.activo);
+      ref.invalidate(socioDetalleProvider(socio.id));
+      ref.invalidate(sociosControllerProvider);
+      messenger.showSnackBar(SnackBar(
+          content: Text(
+              desactivar ? 'Socio deshabilitado' : 'Socio activado')));
+    } catch (_) {
+      messenger.showSnackBar(const SnackBar(
+          content: Text('No se pudo cambiar el estado del socio')));
+    }
   }
 
   @override

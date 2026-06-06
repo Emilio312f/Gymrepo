@@ -26,20 +26,26 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (context, state, child) => AppShell(child: child),
         routes: [
           GoRoute(
-              path: '/home', builder: (context, state) => const HomeScreen()),
+              path: '/home',
+              pageBuilder: (context, state) =>
+                  const NoTransitionPage(child: HomeScreen())),
           GoRoute(
               path: '/socios',
-              builder: (context, state) => const SociosScreen()),
+              pageBuilder: (context, state) =>
+                  const NoTransitionPage(child: SociosScreen())),
           GoRoute(
               path: '/socios/:id',
-              builder: (context, state) =>
-                  SocioDetalleScreen(socioId: state.pathParameters['id']!)),
+              pageBuilder: (context, state) => NoTransitionPage(
+                  child: SocioDetalleScreen(
+                      socioId: state.pathParameters['id']!))),
           GoRoute(
               path: '/planes',
-              builder: (context, state) => const PlanesScreen()),
+              pageBuilder: (context, state) =>
+                  const NoTransitionPage(child: PlanesScreen())),
           GoRoute(
               path: '/personal',
-              builder: (context, state) => const PersonalScreen()),
+              pageBuilder: (context, state) =>
+                  const NoTransitionPage(child: PersonalScreen())),
         ],
       ),
     ],

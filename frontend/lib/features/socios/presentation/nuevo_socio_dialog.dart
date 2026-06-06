@@ -4,6 +4,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/theme/app_theme.dart';
+import '../../../core/validators.dart';
+import '../../../core/widgets/app_dropdown.dart';
 import '../data/documento_repository.dart';
 import 'socios_controller.dart';
 
@@ -49,21 +51,16 @@ class _NuevoSocioDialogState extends ConsumerState<_NuevoSocioDialog> {
     super.dispose();
   }
 
-  String _fechaFormateada(DateTime d) {
-    final m = d.month.toString().padLeft(2, '0');
-    final dia = d.day.toString().padLeft(2, '0');
-    return '${d.year}-$m-$dia';
-  }
+  String _fmt(DateTime d) =>
+      '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
 
   Future<void> _buscarDni() async {
     final dni = _documento.text.trim();
     if (dni.length != 8 || dni == _dniConsultado) return;
-
     setState(() {
       _buscandoDni = true;
       _error = null;
     });
-
     try {
       final datos =
           await ref.read(documentoRepositoryProvider).consultarDni(dni);
@@ -89,23 +86,29 @@ class _NuevoSocioDialogState extends ConsumerState<_NuevoSocioDialog> {
   }
 
   Future<void> _elegirFecha() async {
-    final ahora = DateTime.now();
-    final fecha = await showDatePicker(
+    final hoy = DateTime.now();
+    final maxima = DateTime(hoy.year - 18, hoy.month, hoy.day);
+    final f = await showDatePicker(
       context: context,
-      initialDate: _fechaNacimiento ?? DateTime(ahora.year - 20),
+      initialDate: _fechaNacimiento ?? maxima,
       firstDate: DateTime(1920),
-      lastDate: ahora,
-      helpText: 'Fecha de nacimiento',
+      lastDate: maxima,
+      helpText: 'Fecha de nacimiento (mayor de 18)',
     );
-    if (fecha != null) setState(() => _fechaNacimiento = fecha);
+    if (f != null) setState(() => _fechaNacimiento = f);
   }
 
   Future<void> _guardar() async {
-    if (_documento.text.trim().isEmpty ||
-        _nombres.text.trim().isEmpty ||
-        _apellidos.text.trim().isEmpty) {
-      setState(
-          () => _error = 'Documento, nombres y apellidos son obligatorios');
+    final error = Validadores.dni(_documento.text) ??
+        Validadores.nombre(_nombres.text, 'Nombres') ??
+        Validadores.nombre(_apellidos.text, 'Apellidos') ??
+        Validadores.requerido(_sexo ?? '', 'Sexo') ??
+        Validadores.mayorDeEdad(_fechaNacimiento) ??
+        Validadores.requerido(_direccion.text, 'Dirección') ??
+        Validadores.telefono(_telefono.text) ??
+        Validadores.email(_email.text);
+    if (error != null) {
+      setState(() => _error = error);
       return;
     }
 
@@ -122,12 +125,10 @@ class _NuevoSocioDialogState extends ConsumerState<_NuevoSocioDialog> {
           email: _email.text.trim(),
           sexo: _sexo ?? '',
           direccion: _direccion.text.trim(),
-          fechaNacimiento:
-              _fechaNacimiento != null ? _fechaFormateada(_fechaNacimiento!) : '',
+          fechaNacimiento: _fmt(_fechaNacimiento!),
         );
 
     if (!mounted) return;
-
     if (err == null) {
       Navigator.of(context).pop();
     } else {
@@ -186,14 +187,24 @@ class _NuevoSocioDialogState extends ConsumerState<_NuevoSocioDialog> {
               const _Etiqueta('Nombres'),
               const SizedBox(height: 6),
               TextField(
-                  controller: _nombres,
-                  decoration: const InputDecoration(hintText: 'Nombres')),
+                controller: _nombres,
+                inputFormatters: [
+                  FilteringTextInputFormatter.allow(
+                      RegExp(r'[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ ]'))
+                ],
+                decoration: const InputDecoration(hintText: 'Nombres'),
+              ),
               const SizedBox(height: 16),
               const _Etiqueta('Apellidos'),
               const SizedBox(height: 6),
               TextField(
-                  controller: _apellidos,
-                  decoration: const InputDecoration(hintText: 'Apellidos')),
+                controller: _apellidos,
+                inputFormatters: [
+                  FilteringTextInputFormatter.allow(
+                      RegExp(r'[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ ]'))
+                ],
+                decoration: const InputDecoration(hintText: 'Apellidos'),
+              ),
               const SizedBox(height: 16),
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -204,10 +215,9 @@ class _NuevoSocioDialogState extends ConsumerState<_NuevoSocioDialog> {
                       children: [
                         const _Etiqueta('Sexo'),
                         const SizedBox(height: 6),
-                        DropdownButtonFormField<String>(
-                          initialValue: _sexo,
-                          decoration:
-                              const InputDecoration(hintText: 'Seleccionar'),
+                        AppDropdown<String>(
+                          value: _sexo,
+                          hint: 'Seleccionar',
                           items: const [
                             DropdownMenuItem(
                                 value: 'M', child: Text('Masculino')),
@@ -235,7 +245,7 @@ class _NuevoSocioDialogState extends ConsumerState<_NuevoSocioDialog> {
                                     size: 18)),
                             child: Text(
                               _fechaNacimiento != null
-                                  ? _fechaFormateada(_fechaNacimiento!)
+                                  ? _fmt(_fechaNacimiento!)
                                   : 'dd/mm/aaaa',
                               style: TextStyle(
                                   color: _fechaNacimiento != null
@@ -254,7 +264,7 @@ class _NuevoSocioDialogState extends ConsumerState<_NuevoSocioDialog> {
               const SizedBox(height: 6),
               TextField(
                   controller: _direccion,
-                  decoration: const InputDecoration(hintText: 'Opcional')),
+                  decoration: const InputDecoration(hintText: 'Dirección')),
               const SizedBox(height: 16),
               Row(
                 children: [
@@ -265,10 +275,15 @@ class _NuevoSocioDialogState extends ConsumerState<_NuevoSocioDialog> {
                         const _Etiqueta('Teléfono'),
                         const SizedBox(height: 6),
                         TextField(
-                            controller: _telefono,
-                            keyboardType: TextInputType.phone,
-                            decoration:
-                                const InputDecoration(hintText: 'Opcional')),
+                          controller: _telefono,
+                          keyboardType: TextInputType.phone,
+                          maxLength: 15,
+                          inputFormatters: [
+                            FilteringTextInputFormatter.digitsOnly
+                          ],
+                          decoration: const InputDecoration(
+                              hintText: 'Teléfono', counterText: ''),
+                        ),
                       ],
                     ),
                   ),
@@ -283,7 +298,7 @@ class _NuevoSocioDialogState extends ConsumerState<_NuevoSocioDialog> {
                             controller: _email,
                             keyboardType: TextInputType.emailAddress,
                             decoration:
-                                const InputDecoration(hintText: 'Opcional')),
+                                const InputDecoration(hintText: 'Correo')),
                       ],
                     ),
                   ),

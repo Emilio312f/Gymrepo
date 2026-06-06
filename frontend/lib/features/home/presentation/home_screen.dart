@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/theme/app_theme.dart';
 import '../../auth/presentation/auth_controller.dart';
+import '../../dashboard/data/stats_repository.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
@@ -11,6 +12,7 @@ class HomeScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final usuario = ref.watch(authControllerProvider).usuario;
+    final stats = ref.watch(dashboardStatsProvider);
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(28),
@@ -42,65 +44,92 @@ class HomeScreen extends ConsumerWidget {
                         fontSize: 12),
                   ),
                 ),
+                const Spacer(),
+                IconButton(
+                  tooltip: 'Actualizar',
+                  onPressed: () => ref.invalidate(dashboardStatsProvider),
+                  icon: const Icon(Icons.refresh,
+                      color: AppColors.textoSecundario),
+                ),
               ],
             ),
             const SizedBox(height: 4),
             const Text('Resumen de tu gimnasio',
                 style: TextStyle(color: AppColors.textoSecundario)),
             const SizedBox(height: 24),
-            Wrap(
-              spacing: 16,
-              runSpacing: 16,
-              children: const [
-                _MetricCard(
-                  icono: Icons.groups_outlined,
-                  color: AppColors.acento,
-                  valor: '128',
-                  etiqueta: 'Socios activos',
-                ),
-                _MetricCard(
-                  icono: Icons.payments_outlined,
-                  color: AppColors.exito,
-                  valor: 'S/ 9,240',
-                  etiqueta: 'Ingresos del mes',
-                ),
-                _MetricCard(
-                  icono: Icons.schedule_outlined,
-                  color: AppColors.advertencia,
-                  valor: '7',
-                  etiqueta: 'Vencen esta semana',
-                ),
-                _MetricCard(
-                  icono: Icons.event_busy_outlined,
-                  color: AppColors.peligro,
-                  valor: '15',
-                  etiqueta: 'Membresías vencidas',
-                ),
-              ],
-            ),
-            const SizedBox(height: 24),
-            Container(
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: AppColors.acentoSuave,
-                borderRadius: BorderRadius.circular(12),
+            stats.when(
+              loading: () => const Padding(
+                padding: EdgeInsets.all(40),
+                child: Center(child: CircularProgressIndicator()),
               ),
-              child: const Row(
+              error: (e, _) => _BannerInfo(
+                color: AppColors.peligro,
+                icono: Icons.cloud_off,
+                texto: 'No se pudieron cargar las estadísticas.',
+              ),
+              data: (s) => Wrap(
+                spacing: 16,
+                runSpacing: 16,
                 children: [
-                  Icon(Icons.info_outline, color: AppColors.acento, size: 20),
-                  SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      'Datos de muestra. Las métricas reales se conectarán con la API en la siguiente feature.',
-                      style: TextStyle(
-                          color: AppColors.textoSecundario, fontSize: 13),
-                    ),
+                  _MetricCard(
+                    icono: Icons.groups_outlined,
+                    color: AppColors.acento,
+                    valor: '${s.sociosActivos}',
+                    etiqueta: 'Socios activos',
                   ),
-                ],
+                  _MetricCard(
+                    icono: Icons.payments_outlined,
+                    color: AppColors.exito,
+                    valor: 'S/ ${s.ingresosMes.toStringAsFixed(2)}',
+                    etiqueta: 'Ingresos del mes',
+                  ),
+                  _MetricCard(
+                    icono: Icons.schedule_outlined,
+                    color: AppColors.advertencia,
+                    valor: '${s.vencenSemana}',
+                    etiqueta: 'Vencen esta semana',
+                  ),
+                  _MetricCard(
+                    icono: Icons.event_busy_outlined,
+                    color: AppColors.peligro,
+                    valor: '${s.vencidas}',
+                    etiqueta: 'Membresías vencidas',
+                  ),
+                ].animate(interval: 60.ms).fadeIn(duration: 250.ms),
               ),
             ),
           ],
-        ).animate().fadeIn(duration: 350.ms),
+        ),
+      ),
+    );
+  }
+}
+
+class _BannerInfo extends StatelessWidget {
+  final Color color;
+  final IconData icono;
+  final String texto;
+
+  const _BannerInfo(
+      {required this.color, required this.icono, required this.texto});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          Icon(icono, color: color, size: 20),
+          const SizedBox(width: 12),
+          Expanded(
+              child: Text(texto,
+                  style: const TextStyle(
+                      color: AppColors.textoSecundario, fontSize: 13))),
+        ],
       ),
     );
   }

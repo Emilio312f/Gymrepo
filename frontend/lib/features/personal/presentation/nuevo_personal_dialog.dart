@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/theme/app_theme.dart';
+import '../../../core/validators.dart';
+import '../../../core/widgets/app_dropdown.dart';
 import 'personal_controller.dart';
 
 Future<void> mostrarNuevoPersonalDialog(BuildContext context) {
@@ -38,11 +40,13 @@ class _NuevoPersonalDialogState extends ConsumerState<_NuevoPersonalDialog> {
   }
 
   Future<void> _guardar() async {
-    if (_nombre.text.trim().isEmpty ||
-        _email.text.trim().isEmpty ||
-        _password.text.trim().length < 6) {
-      setState(() =>
-          _error = 'Nombre, email y contraseña (mínimo 6) son obligatorios');
+    final error = Validadores.nombre(_nombre.text, 'Nombre') ??
+        Validadores.email(_email.text) ??
+        (_password.text.trim().length < 6
+            ? 'La contraseña debe tener al menos 6 caracteres'
+            : null);
+    if (error != null) {
+      setState(() => _error = error);
       return;
     }
     setState(() {
@@ -103,10 +107,8 @@ class _NuevoPersonalDialogState extends ConsumerState<_NuevoPersonalDialog> {
               const SizedBox(height: 16),
               _lbl('Rol'),
               const SizedBox(height: 6),
-              DropdownButtonFormField<String>(
-                initialValue: _rol,
-                isExpanded: true,
-                decoration: const InputDecoration(),
+              AppDropdown<String>(
+                value: _rol,
                 items: const [
                   DropdownMenuItem(
                       value: 'recepcion', child: Text('Recepción')),

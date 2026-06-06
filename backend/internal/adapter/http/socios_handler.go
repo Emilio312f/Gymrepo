@@ -87,6 +87,9 @@ func (h *SociosHandler) Crear(w http.ResponseWriter, r *http.Request) {
 		FechaNacimiento: req.FechaNacimiento,
 	})
 	switch {
+	case errors.Is(err, domain.ErrDatosInvalidos):
+		escribirError(w, http.StatusBadRequest, "datos inválidos: revisa nombres, apellidos y documento")
+		return
 	case errors.Is(err, domain.ErrSocioDuplicado):
 		escribirError(w, http.StatusConflict, "ya existe un socio con ese código o documento")
 		return
@@ -139,6 +142,9 @@ func (h *SociosHandler) Actualizar(w http.ResponseWriter, r *http.Request) {
 		FechaNacimiento: req.FechaNacimiento,
 	})
 	switch {
+	case errors.Is(err, domain.ErrDatosInvalidos):
+		escribirError(w, http.StatusBadRequest, "datos inválidos: revisa nombres, apellidos y documento")
+		return
 	case errors.Is(err, domain.ErrNoEncontrado):
 		escribirError(w, http.StatusNotFound, "socio no encontrado")
 		return

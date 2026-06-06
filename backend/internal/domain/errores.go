@@ -12,4 +12,5 @@ var (
 	ErrRolInvalido           = errors.New("rol inválido")
 	ErrSocioDuplicado        = errors.New("ya existe un socio con ese código o documento en este gimnasio")
 	ErrDNIInvalido           = errors.New("el DNI debe tener 8 dígitos")
+	ErrDatosInvalidos        = errors.New("datos inválidos")
 )
