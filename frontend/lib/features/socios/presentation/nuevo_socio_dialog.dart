@@ -136,7 +136,7 @@ class _NuevoSocioDialogState extends ConsumerState<_NuevoSocioDialog> {
                   if (v.length == 8) _buscarDni();
                 },
                 decoration: InputDecoration(
-                  hintText: 'Escribe el DNI y se autocompletan los datos',
+                  hintText: 'Número de DNI',
                   counterText: '',
                   suffixIcon: _buscandoDni
                       ? const Padding(
@@ -211,27 +211,45 @@ class _NuevoSocioDialogState extends ConsumerState<_NuevoSocioDialog> {
                     style: const TextStyle(
                         color: AppColors.peligro, fontSize: 13)),
               ],
+              const SizedBox(height: 24),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: _guardando
+                          ? null
+                          : () => Navigator.of(context).pop(),
+                      style: OutlinedButton.styleFrom(
+                        minimumSize: const Size.fromHeight(46),
+                        foregroundColor: AppColors.textoSecundario,
+                        side: const BorderSide(color: AppColors.borde),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10)),
+                      ),
+                      child: const Text('Cancelar'),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: FilledButton(
+                      onPressed: _guardando ? null : _guardar,
+                      style: FilledButton.styleFrom(
+                          minimumSize: const Size.fromHeight(46)),
+                      child: _guardando
+                          ? const SizedBox(
+                              height: 18,
+                              width: 18,
+                              child: CircularProgressIndicator(
+                                  strokeWidth: 2.2, color: Colors.white))
+                          : const Text('Guardar'),
+                    ),
+                  ),
+                ],
+              ),
             ],
           ),
         ),
       ),
-      actions: [
-        TextButton(
-          onPressed: _guardando ? null : () => Navigator.of(context).pop(),
-          child: const Text('Cancelar',
-              style: TextStyle(color: AppColors.textoSecundario)),
-        ),
-        FilledButton(
-          onPressed: _guardando ? null : _guardar,
-          child: _guardando
-              ? const SizedBox(
-                  height: 18,
-                  width: 18,
-                  child: CircularProgressIndicator(
-                      strokeWidth: 2.2, color: Colors.white))
-              : const Text('Guardar'),
-        ),
-      ],
     );
   }
 }
