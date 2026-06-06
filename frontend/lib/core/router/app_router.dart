@@ -8,6 +8,7 @@ import '../../features/home/presentation/home_screen.dart';
 import '../../features/socios/presentation/socios_screen.dart';
 import '../../features/socios/presentation/socio_detalle_screen.dart';
 import '../../features/planes/presentation/planes_screen.dart';
+import '../../features/personal/presentation/personal_screen.dart';
 
 final appRouterProvider = Provider<GoRouter>((ref) {
   return GoRouter(
@@ -36,6 +37,9 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           GoRoute(
               path: '/planes',
               builder: (context, state) => const PlanesScreen()),
+          GoRoute(
+              path: '/personal',
+              builder: (context, state) => const PersonalScreen()),
         ],
       ),
     ],

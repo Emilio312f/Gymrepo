@@ -16,6 +16,7 @@ import (
 	"gymcontrol/internal/app/auth"
 	"gymcontrol/internal/app/documento"
 	"gymcontrol/internal/app/membresias"
+	"gymcontrol/internal/app/personal"
 	"gymcontrol/internal/app/planes"
 	"gymcontrol/internal/app/socios"
 	"gymcontrol/internal/platform/config"
@@ -45,6 +46,7 @@ func main() {
 	sociosRepo := postgres.NewSociosRepo(pool)
 	planesRepo := postgres.NewPlanesRepo(pool)
 	membresiasRepo := postgres.NewMembresiasRepo(pool)
+	personalRepo := postgres.NewPersonalRepo(pool)
 	hasher := security.NewBcryptHasher()
 	jwt := security.NewJWT(cfg.JWTSecret, cfg.JWTTTL)
 
@@ -54,15 +56,17 @@ func main() {
 	sociosSvc := socios.NewService(sociosRepo)
 	planesSvc := planes.NewService(planesRepo)
 	membresiasSvc := membresias.NewService(membresiasRepo)
+	personalSvc := personal.NewService(personalRepo, hasher)
 	documentoSvc := documento.NewService(dniCliente)
 
 	authHandler := nethttp.NewAuthHandler(authSvc)
 	sociosHandler := nethttp.NewSociosHandler(sociosSvc)
 	planesHandler := nethttp.NewPlanesHandler(planesSvc)
 	membresiasHandler := nethttp.NewMembresiasHandler(membresiasSvc)
+	personalHandler := nethttp.NewPersonalHandler(personalSvc)
 	documentoHandler := nethttp.NewDocumentoHandler(documentoSvc)
 
-	router := nethttp.NuevoRouter(authHandler, sociosHandler, documentoHandler, planesHandler, membresiasHandler, jwt)
+	router := nethttp.NuevoRouter(authHandler, sociosHandler, documentoHandler, planesHandler, membresiasHandler, personalHandler, jwt)
 
 	// 4. Servidor HTTP con apagado ordenado.
 	srv := &http.Server{

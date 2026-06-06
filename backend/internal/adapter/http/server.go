@@ -13,7 +13,7 @@ import (
 )
 
 // NuevoRouter arma todas las rutas de la API.
-func NuevoRouter(authH *AuthHandler, sociosH *SociosHandler, docH *DocumentoHandler, planesH *PlanesHandler, membresiasH *MembresiasHandler, jwt *security.JWT) http.Handler {
+func NuevoRouter(authH *AuthHandler, sociosH *SociosHandler, docH *DocumentoHandler, planesH *PlanesHandler, membresiasH *MembresiasHandler, personalH *PersonalHandler, jwt *security.JWT) http.Handler {
 	r := chi.NewRouter()
 
 	r.Use(middleware.RequestID)
@@ -67,6 +67,12 @@ func NuevoRouter(authH *AuthHandler, sociosH *SociosHandler, docH *DocumentoHand
 				Route("/planes", func(r chi.Router) {
 					r.Get("/", planesH.Listar)
 					r.With(RequiereRol(string(domain.RolAdmin))).Post("/", planesH.Crear)
+				})
+
+			r.With(RequiereRol(string(domain.RolAdmin))).
+				Route("/personal", func(r chi.Router) {
+					r.Get("/", personalH.Listar)
+					r.Post("/", personalH.Crear)
 				})
 
 			r.With(RequiereRol(string(domain.RolAdmin), string(domain.RolRecepcion))).

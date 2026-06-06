@@ -9,8 +9,9 @@ class Modulo {
   final String titulo;
   final IconData icono;
   final String? ruta;
+  final bool soloAdmin;
 
-  const Modulo(this.titulo, this.icono, [this.ruta]);
+  const Modulo(this.titulo, this.icono, [this.ruta, this.soloAdmin = false]);
 
   bool get habilitado => ruta != null;
 }
@@ -21,7 +22,7 @@ const List<Modulo> modulos = [
   Modulo('Planes', Icons.card_membership_outlined, '/planes'),
   Modulo('Pagos', Icons.payments_outlined),
   Modulo('Asistencia', Icons.how_to_reg_outlined),
-  Modulo('Personal', Icons.badge_outlined),
+  Modulo('Personal', Icons.badge_outlined, '/personal', true),
 ];
 
 class AppShell extends StatelessWidget {
@@ -105,11 +106,12 @@ class _NavContent extends ConsumerWidget {
               padding: const EdgeInsets.symmetric(vertical: 10),
               children: [
                 for (final m in modulos)
-                  _NavTile(
-                      modulo: m,
-                      activo: m.ruta != null &&
-                          (location == m.ruta ||
-                              location.startsWith('${m.ruta}/'))),
+                  if (!m.soloAdmin || usuario?.rol == 'admin')
+                    _NavTile(
+                        modulo: m,
+                        activo: m.ruta != null &&
+                            (location == m.ruta ||
+                                location.startsWith('${m.ruta}/'))),
               ],
             ),
           ),
