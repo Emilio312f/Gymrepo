@@ -10,28 +10,32 @@ class SociosController extends AsyncNotifier<List<Socio>> {
   }
 
   Future<String?> crear({
-    required String codigo,
     required String nombres,
     required String apellidos,
     required String documento,
     String telefono = '',
     String email = '',
+    String sexo = '',
+    String direccion = '',
+    String fechaNacimiento = '',
   }) async {
     try {
       await ref.read(sociosRepositoryProvider).crear(
-            codigo: codigo,
             nombres: nombres,
             apellidos: apellidos,
             documento: documento,
             telefono: telefono,
             email: email,
+            sexo: sexo,
+            direccion: direccion,
+            fechaNacimiento: fechaNacimiento,
           );
       ref.invalidateSelf();
       await future;
       return null;
     } on DioException catch (e) {
       if (e.response?.statusCode == 409) {
-        return 'Ya existe un socio con ese código o documento';
+        return 'Ya existe un socio con ese documento';
       }
       return 'No se pudo registrar el socio';
     } catch (_) {

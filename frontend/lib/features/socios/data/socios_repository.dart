@@ -11,6 +11,9 @@ class Socio {
   final String documento;
   final String telefono;
   final String email;
+  final String sexo;
+  final String direccion;
+  final String fechaNacimiento;
   final bool activo;
 
   const Socio({
@@ -21,6 +24,9 @@ class Socio {
     required this.documento,
     required this.telefono,
     required this.email,
+    required this.sexo,
+    required this.direccion,
+    required this.fechaNacimiento,
     required this.activo,
   });
 
@@ -41,6 +47,9 @@ class Socio {
       documento: json['documento'] as String? ?? '',
       telefono: json['telefono'] as String? ?? '',
       email: json['email'] as String? ?? '',
+      sexo: json['sexo'] as String? ?? '',
+      direccion: json['direccion'] as String? ?? '',
+      fechaNacimiento: json['fecha_nacimiento'] as String? ?? '',
       activo: json['activo'] as bool? ?? false,
     );
   }
@@ -58,20 +67,24 @@ class SociosRepository {
   }
 
   Future<Socio> crear({
-    required String codigo,
     required String nombres,
     required String apellidos,
     required String documento,
     String telefono = '',
     String email = '',
+    String sexo = '',
+    String direccion = '',
+    String fechaNacimiento = '',
   }) async {
     final resp = await _dio.post('/socios', data: {
-      'codigo': codigo,
       'nombres': nombres,
       'apellidos': apellidos,
       'documento': documento,
       'telefono': telefono,
       'email': email,
+      'sexo': sexo,
+      'direccion': direccion,
+      'fecha_nacimiento': fechaNacimiento,
     });
     return Socio.fromJson(resp.data as Map<String, dynamic>);
   }

@@ -23,14 +23,15 @@ var _ socios.Repositorio = (*SociosRepo)(nil)
 
 func (r *SociosRepo) Crear(ctx context.Context, s domain.Socio) (domain.Socio, error) {
 	err := r.pool.QueryRow(ctx,
-		`INSERT INTO socio (gimnasio_id, codigo, nombres, apellidos, documento, telefono, email)
+		`INSERT INTO socio (gimnasio_id, codigo, nombres, apellidos, documento, telefono, email, sexo, direccion, fecha_nacimiento)
 		 VALUES (
 		   $1,
 		   COALESCE(NULLIF($2, ''), 'S' || LPAD(((SELECT COUNT(*) FROM socio WHERE gimnasio_id = $1) + 1)::text, 4, '0')),
-		   $3, $4, $5, NULLIF($6, ''), NULLIF($7, '')
+		   $3, $4, $5, NULLIF($6, ''), NULLIF($7, ''), NULLIF($8, ''), NULLIF($9, ''), NULLIF($10, '')::date
 		 )
 		 RETURNING id, codigo, activo, created_at`,
 		s.GimnasioID, s.Codigo, s.Nombres, s.Apellidos, s.Documento, s.Telefono, s.Email,
+		s.Sexo, s.Direccion, s.FechaNacimiento,
 	).Scan(&s.ID, &s.Codigo, &s.Activo, &s.CreatedAt)
 	if esViolacionUnica(err) {
 		return domain.Socio{}, domain.ErrSocioDuplicado
@@ -44,7 +45,10 @@ func (r *SociosRepo) Crear(ctx context.Context, s domain.Socio) (domain.Socio, e
 func (r *SociosRepo) Listar(ctx context.Context, gimnasioID string) ([]domain.Socio, error) {
 	rows, err := r.pool.Query(ctx,
 		`SELECT id, gimnasio_id, codigo, nombres, apellidos, documento,
-		        COALESCE(telefono, ''), COALESCE(email, ''), activo, created_at
+		        COALESCE(telefono, ''), COALESCE(email, ''),
+		        COALESCE(sexo, ''), COALESCE(direccion, ''),
+		        COALESCE(to_char(fecha_nacimiento, 'YYYY-MM-DD'), ''),
+		        activo, created_at
 		 FROM socio WHERE gimnasio_id = $1 ORDER BY created_at DESC`,
 		gimnasioID,
 	)
@@ -57,7 +61,8 @@ func (r *SociosRepo) Listar(ctx context.Context, gimnasioID string) ([]domain.So
 	for rows.Next() {
 		var s domain.Socio
 		if err := rows.Scan(&s.ID, &s.GimnasioID, &s.Codigo, &s.Nombres, &s.Apellidos,
-			&s.Documento, &s.Telefono, &s.Email, &s.Activo, &s.CreatedAt); err != nil {
+			&s.Documento, &s.Telefono, &s.Email, &s.Sexo, &s.Direccion,
+			&s.FechaNacimiento, &s.Activo, &s.CreatedAt); err != nil {
 			return nil, err
 		}
 		lista = append(lista, s)
@@ -69,11 +74,15 @@ func (r *SociosRepo) Obtener(ctx context.Context, gimnasioID, id string) (domain
 	var s domain.Socio
 	err := r.pool.QueryRow(ctx,
 		`SELECT id, gimnasio_id, codigo, nombres, apellidos, documento,
-		        COALESCE(telefono, ''), COALESCE(email, ''), activo, created_at
+		        COALESCE(telefono, ''), COALESCE(email, ''),
+		        COALESCE(sexo, ''), COALESCE(direccion, ''),
+		        COALESCE(to_char(fecha_nacimiento, 'YYYY-MM-DD'), ''),
+		        activo, created_at
 		 FROM socio WHERE gimnasio_id = $1 AND id = $2`,
 		gimnasioID, id,
 	).Scan(&s.ID, &s.GimnasioID, &s.Codigo, &s.Nombres, &s.Apellidos,
-		&s.Documento, &s.Telefono, &s.Email, &s.Activo, &s.CreatedAt)
+		&s.Documento, &s.Telefono, &s.Email, &s.Sexo, &s.Direccion,
+		&s.FechaNacimiento, &s.Activo, &s.CreatedAt)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return domain.Socio{}, domain.ErrNoEncontrado
 	}

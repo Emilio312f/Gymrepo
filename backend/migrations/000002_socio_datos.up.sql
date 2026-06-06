@@ -1,0 +1,2 @@
+ALTER TABLE socio ADD COLUMN sexo TEXT;
+ALTER TABLE socio ADD COLUMN direccion TEXT;

@@ -19,37 +19,46 @@ func NewSociosHandler(svc *socios.Service) *SociosHandler {
 }
 
 type socioResp struct {
-	ID        string    `json:"id"`
-	Codigo    string    `json:"codigo"`
-	Nombres   string    `json:"nombres"`
-	Apellidos string    `json:"apellidos"`
-	Documento string    `json:"documento"`
-	Telefono  string    `json:"telefono"`
-	Email     string    `json:"email"`
-	Activo    bool      `json:"activo"`
-	CreatedAt time.Time `json:"created_at"`
+	ID              string    `json:"id"`
+	Codigo          string    `json:"codigo"`
+	Nombres         string    `json:"nombres"`
+	Apellidos       string    `json:"apellidos"`
+	Documento       string    `json:"documento"`
+	Telefono        string    `json:"telefono"`
+	Email           string    `json:"email"`
+	Sexo            string    `json:"sexo"`
+	Direccion       string    `json:"direccion"`
+	FechaNacimiento string    `json:"fecha_nacimiento"`
+	Activo          bool      `json:"activo"`
+	CreatedAt       time.Time `json:"created_at"`
 }
 
 func aSocioResp(s domain.Socio) socioResp {
 	return socioResp{
-		ID:        s.ID,
-		Codigo:    s.Codigo,
-		Nombres:   s.Nombres,
-		Apellidos: s.Apellidos,
-		Documento: s.Documento,
-		Telefono:  s.Telefono,
-		Email:     s.Email,
-		Activo:    s.Activo,
-		CreatedAt: s.CreatedAt,
+		ID:              s.ID,
+		Codigo:          s.Codigo,
+		Nombres:         s.Nombres,
+		Apellidos:       s.Apellidos,
+		Documento:       s.Documento,
+		Telefono:        s.Telefono,
+		Email:           s.Email,
+		Sexo:            s.Sexo,
+		Direccion:       s.Direccion,
+		FechaNacimiento: s.FechaNacimiento,
+		Activo:          s.Activo,
+		CreatedAt:       s.CreatedAt,
 	}
 }
 
 type crearSocioReq struct {
-	Nombres   string `json:"nombres"`
-	Apellidos string `json:"apellidos"`
-	Documento string `json:"documento"`
-	Telefono  string `json:"telefono"`
-	Email     string `json:"email"`
+	Nombres         string `json:"nombres"`
+	Apellidos       string `json:"apellidos"`
+	Documento       string `json:"documento"`
+	Telefono        string `json:"telefono"`
+	Email           string `json:"email"`
+	Sexo            string `json:"sexo"`
+	Direccion       string `json:"direccion"`
+	FechaNacimiento string `json:"fecha_nacimiento"`
 }
 
 func (h *SociosHandler) Crear(w http.ResponseWriter, r *http.Request) {
@@ -66,11 +75,14 @@ func (h *SociosHandler) Crear(w http.ResponseWriter, r *http.Request) {
 	}
 
 	socio, err := h.svc.Crear(r.Context(), gimnasioID, socios.EntradaSocio{
-		Nombres:   req.Nombres,
-		Apellidos: req.Apellidos,
-		Documento: req.Documento,
-		Telefono:  req.Telefono,
-		Email:     req.Email,
+		Nombres:         req.Nombres,
+		Apellidos:       req.Apellidos,
+		Documento:       req.Documento,
+		Telefono:        req.Telefono,
+		Email:           req.Email,
+		Sexo:            req.Sexo,
+		Direccion:       req.Direccion,
+		FechaNacimiento: req.FechaNacimiento,
 	})
 	switch {
 	case errors.Is(err, domain.ErrSocioDuplicado):
