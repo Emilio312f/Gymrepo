@@ -7,21 +7,19 @@ import 'socios_controller.dart';
 Future<void> mostrarNuevoSocioDialog(BuildContext context) {
   return showDialog(
     context: context,
-    builder: (_) => const Dialog(
-      backgroundColor: AppColors.superficie,
-      child: _NuevoSocioForm(),
-    ),
+    barrierDismissible: false,
+    builder: (_) => const _NuevoSocioDialog(),
   );
 }
 
-class _NuevoSocioForm extends ConsumerStatefulWidget {
-  const _NuevoSocioForm();
+class _NuevoSocioDialog extends ConsumerStatefulWidget {
+  const _NuevoSocioDialog();
 
   @override
-  ConsumerState<_NuevoSocioForm> createState() => _NuevoSocioFormState();
+  ConsumerState<_NuevoSocioDialog> createState() => _NuevoSocioDialogState();
 }
 
-class _NuevoSocioFormState extends ConsumerState<_NuevoSocioForm> {
+class _NuevoSocioDialogState extends ConsumerState<_NuevoSocioDialog> {
   final _codigo = TextEditingController();
   final _nombres = TextEditingController();
   final _apellidos = TextEditingController();
@@ -48,7 +46,8 @@ class _NuevoSocioFormState extends ConsumerState<_NuevoSocioForm> {
         _nombres.text.trim().isEmpty ||
         _apellidos.text.trim().isEmpty ||
         _documento.text.trim().isEmpty) {
-      setState(() => _error = 'Código, nombres, apellidos y documento son obligatorios');
+      setState(() =>
+          _error = 'Código, nombres, apellidos y documento son obligatorios');
       return;
     }
 
@@ -80,90 +79,89 @@ class _NuevoSocioFormState extends ConsumerState<_NuevoSocioForm> {
 
   @override
   Widget build(BuildContext context) {
-    return ConstrainedBox(
-      constraints: const BoxConstraints(maxWidth: 460),
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            const Text('Nuevo socio',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700)),
-            const SizedBox(height: 4),
-            const Text('Registra un nuevo miembro del gimnasio',
-                style: TextStyle(color: AppColors.textoSecundario)),
-            const SizedBox(height: 24),
-            Row(
-              children: [
-                Expanded(
-                  child: _Campo(
-                      etiqueta: 'Código',
-                      controller: _codigo,
-                      hint: 'A001'),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _Campo(
-                      etiqueta: 'Documento',
-                      controller: _documento,
-                      hint: 'DNI'),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            _Campo(etiqueta: 'Nombres', controller: _nombres, hint: 'Ana María'),
-            const SizedBox(height: 16),
-            _Campo(etiqueta: 'Apellidos', controller: _apellidos, hint: 'Pérez'),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                Expanded(
-                  child: _Campo(
-                      etiqueta: 'Teléfono',
-                      controller: _telefono,
-                      hint: 'Opcional'),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _Campo(
-                      etiqueta: 'Correo',
-                      controller: _email,
-                      hint: 'Opcional'),
-                ),
-              ],
-            ),
-            if (_error != null) ...[
+    return AlertDialog(
+      backgroundColor: AppColors.superficie,
+      surfaceTintColor: AppColors.superficie,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      title: const Text('Nuevo socio',
+          style: TextStyle(fontWeight: FontWeight.w700)),
+      content: SizedBox(
+        width: 420,
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: _Campo(
+                        etiqueta: 'Código', controller: _codigo, hint: 'A001'),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _Campo(
+                        etiqueta: 'Documento',
+                        controller: _documento,
+                        hint: 'DNI'),
+                  ),
+                ],
+              ),
               const SizedBox(height: 16),
-              Text(_error!,
-                  style: const TextStyle(color: AppColors.peligro, fontSize: 13)),
-            ],
-            const SizedBox(height: 24),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                TextButton(
-                  onPressed:
-                      _guardando ? null : () => Navigator.of(context).pop(),
-                  child: const Text('Cancelar',
-                      style: TextStyle(color: AppColors.textoSecundario)),
-                ),
-                const SizedBox(width: 8),
-                FilledButton(
-                  onPressed: _guardando ? null : _guardar,
-                  child: _guardando
-                      ? const SizedBox(
-                          height: 18,
-                          width: 18,
-                          child: CircularProgressIndicator(
-                              strokeWidth: 2.2, color: Colors.white))
-                      : const Text('Guardar'),
-                ),
+              _Campo(
+                  etiqueta: 'Nombres',
+                  controller: _nombres,
+                  hint: 'Ana María'),
+              const SizedBox(height: 16),
+              _Campo(
+                  etiqueta: 'Apellidos',
+                  controller: _apellidos,
+                  hint: 'Pérez Gómez'),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(
+                    child: _Campo(
+                        etiqueta: 'Teléfono',
+                        controller: _telefono,
+                        hint: 'Opcional'),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _Campo(
+                        etiqueta: 'Correo',
+                        controller: _email,
+                        hint: 'Opcional'),
+                  ),
+                ],
+              ),
+              if (_error != null) ...[
+                const SizedBox(height: 16),
+                Text(_error!,
+                    style: const TextStyle(
+                        color: AppColors.peligro, fontSize: 13)),
               ],
-            ),
-          ],
+            ],
+          ),
         ),
       ),
+      actions: [
+        TextButton(
+          onPressed: _guardando ? null : () => Navigator.of(context).pop(),
+          child: const Text('Cancelar',
+              style: TextStyle(color: AppColors.textoSecundario)),
+        ),
+        FilledButton(
+          onPressed: _guardando ? null : _guardar,
+          child: _guardando
+              ? const SizedBox(
+                  height: 18,
+                  width: 18,
+                  child: CircularProgressIndicator(
+                      strokeWidth: 2.2, color: Colors.white))
+              : const Text('Guardar'),
+        ),
+      ],
     );
   }
 }
@@ -185,8 +183,8 @@ class _Campo extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(etiqueta,
-            style: const TextStyle(
-                fontSize: 13, fontWeight: FontWeight.w600)),
+            style:
+                const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
         const SizedBox(height: 6),
         TextField(
           controller: controller,
