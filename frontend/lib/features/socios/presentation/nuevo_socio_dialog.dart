@@ -1,7 +1,10 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/theme/app_theme.dart';
+import '../data/documento_repository.dart';
 import 'socios_controller.dart';
 
 Future<void> mostrarNuevoSocioDialog(BuildContext context) {
@@ -20,34 +23,64 @@ class _NuevoSocioDialog extends ConsumerStatefulWidget {
 }
 
 class _NuevoSocioDialogState extends ConsumerState<_NuevoSocioDialog> {
-  final _codigo = TextEditingController();
+  final _documento = TextEditingController();
   final _nombres = TextEditingController();
   final _apellidos = TextEditingController();
-  final _documento = TextEditingController();
   final _telefono = TextEditingController();
   final _email = TextEditingController();
 
   bool _guardando = false;
+  bool _buscandoDni = false;
+  String? _dniConsultado;
   String? _error;
 
   @override
   void dispose() {
-    _codigo.dispose();
+    _documento.dispose();
     _nombres.dispose();
     _apellidos.dispose();
-    _documento.dispose();
     _telefono.dispose();
     _email.dispose();
     super.dispose();
   }
 
+  Future<void> _buscarDni() async {
+    final dni = _documento.text.trim();
+    if (dni.length != 8 || dni == _dniConsultado) return;
+
+    setState(() {
+      _buscandoDni = true;
+      _error = null;
+    });
+
+    try {
+      final datos = await ref.read(documentoRepositoryProvider).consultarDni(dni);
+      if (!mounted) return;
+      setState(() {
+        _nombres.text = datos.nombres;
+        _apellidos.text = datos.apellidos;
+        _dniConsultado = dni;
+        _buscandoDni = false;
+      });
+    } on DioException catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _buscandoDni = false;
+        _error = e.response?.statusCode == 404
+            ? 'No se encontraron datos para ese DNI. Complétalos manualmente.'
+            : 'No se pudo consultar el DNI. Complétalos manualmente.';
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _buscandoDni = false);
+    }
+  }
+
   Future<void> _guardar() async {
-    if (_codigo.text.trim().isEmpty ||
+    if (_documento.text.trim().isEmpty ||
         _nombres.text.trim().isEmpty ||
-        _apellidos.text.trim().isEmpty ||
-        _documento.text.trim().isEmpty) {
-      setState(() =>
-          _error = 'Código, nombres, apellidos y documento son obligatorios');
+        _apellidos.text.trim().isEmpty) {
+      setState(() => _error = 'Documento, nombres y apellidos son obligatorios');
       return;
     }
 
@@ -57,7 +90,7 @@ class _NuevoSocioDialogState extends ConsumerState<_NuevoSocioDialog> {
     });
 
     final err = await ref.read(sociosControllerProvider.notifier).crear(
-          codigo: _codigo.text.trim(),
+          codigo: '',
           nombres: _nombres.text.trim(),
           apellidos: _apellidos.text.trim(),
           documento: _documento.text.trim(),
@@ -92,46 +125,83 @@ class _NuevoSocioDialogState extends ConsumerState<_NuevoSocioDialog> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: _Campo(
-                        etiqueta: 'Código', controller: _codigo, hint: 'A001'),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _Campo(
-                        etiqueta: 'Documento',
-                        controller: _documento,
-                        hint: 'DNI'),
-                  ),
-                ],
+              _Etiqueta('DNI'),
+              const SizedBox(height: 6),
+              TextField(
+                controller: _documento,
+                keyboardType: TextInputType.number,
+                maxLength: 8,
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                onChanged: (v) {
+                  if (v.length == 8) _buscarDni();
+                },
+                decoration: InputDecoration(
+                  hintText: 'Escribe el DNI y se autocompletan los datos',
+                  counterText: '',
+                  suffixIcon: _buscandoDni
+                      ? const Padding(
+                          padding: EdgeInsets.all(12),
+                          child: SizedBox(
+                            height: 18,
+                            width: 18,
+                            child:
+                                CircularProgressIndicator(strokeWidth: 2.2),
+                          ),
+                        )
+                      : (_dniConsultado != null
+                          ? const Icon(Icons.check_circle,
+                              color: AppColors.exito)
+                          : const Icon(Icons.badge_outlined,
+                              color: AppColors.textoSecundario)),
+                ),
               ),
               const SizedBox(height: 16),
-              _Campo(
-                  etiqueta: 'Nombres',
-                  controller: _nombres,
-                  hint: 'Ana María'),
+              _Etiqueta('Nombres'),
+              const SizedBox(height: 6),
+              TextField(
+                controller: _nombres,
+                decoration: const InputDecoration(hintText: 'Nombres'),
+              ),
               const SizedBox(height: 16),
-              _Campo(
-                  etiqueta: 'Apellidos',
-                  controller: _apellidos,
-                  hint: 'Pérez Gómez'),
+              _Etiqueta('Apellidos'),
+              const SizedBox(height: 6),
+              TextField(
+                controller: _apellidos,
+                decoration: const InputDecoration(hintText: 'Apellidos'),
+              ),
               const SizedBox(height: 16),
               Row(
                 children: [
                   Expanded(
-                    child: _Campo(
-                        etiqueta: 'Teléfono',
-                        controller: _telefono,
-                        hint: 'Opcional'),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _Etiqueta('Teléfono'),
+                        const SizedBox(height: 6),
+                        TextField(
+                          controller: _telefono,
+                          keyboardType: TextInputType.phone,
+                          decoration:
+                              const InputDecoration(hintText: 'Opcional'),
+                        ),
+                      ],
+                    ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
-                    child: _Campo(
-                        etiqueta: 'Correo',
-                        controller: _email,
-                        hint: 'Opcional'),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _Etiqueta('Correo'),
+                        const SizedBox(height: 6),
+                        TextField(
+                          controller: _email,
+                          keyboardType: TextInputType.emailAddress,
+                          decoration:
+                              const InputDecoration(hintText: 'Opcional'),
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),
@@ -166,31 +236,14 @@ class _NuevoSocioDialogState extends ConsumerState<_NuevoSocioDialog> {
   }
 }
 
-class _Campo extends StatelessWidget {
-  final String etiqueta;
-  final TextEditingController controller;
-  final String hint;
+class _Etiqueta extends StatelessWidget {
+  final String texto;
 
-  const _Campo({
-    required this.etiqueta,
-    required this.controller,
-    required this.hint,
-  });
+  const _Etiqueta(this.texto);
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(etiqueta,
-            style:
-                const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
-        const SizedBox(height: 6),
-        TextField(
-          controller: controller,
-          decoration: InputDecoration(hintText: hint),
-        ),
-      ],
-    );
+    return Text(texto,
+        style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600));
   }
 }

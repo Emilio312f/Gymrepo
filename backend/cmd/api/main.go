@@ -10,9 +10,11 @@ import (
 	"syscall"
 	"time"
 
+	"gymcontrol/internal/adapter/dni"
 	nethttp "gymcontrol/internal/adapter/http"
 	"gymcontrol/internal/adapter/storage/postgres"
 	"gymcontrol/internal/app/auth"
+	"gymcontrol/internal/app/documento"
 	"gymcontrol/internal/app/socios"
 	"gymcontrol/internal/platform/config"
 	"gymcontrol/internal/platform/security"
@@ -42,13 +44,17 @@ func main() {
 	hasher := security.NewBcryptHasher()
 	jwt := security.NewJWT(cfg.JWTSecret, cfg.JWTTTL)
 
+	dniCliente := dni.NewCliente(cfg.DNIApiURL, cfg.DNIApiToken)
+
 	authSvc := auth.NewService(authRepo, hasher, jwt)
 	sociosSvc := socios.NewService(sociosRepo)
+	documentoSvc := documento.NewService(dniCliente)
 
 	authHandler := nethttp.NewAuthHandler(authSvc)
 	sociosHandler := nethttp.NewSociosHandler(sociosSvc)
+	documentoHandler := nethttp.NewDocumentoHandler(documentoSvc)
 
-	router := nethttp.NuevoRouter(authHandler, sociosHandler, jwt)
+	router := nethttp.NuevoRouter(authHandler, sociosHandler, documentoHandler, jwt)
 
 	// 4. Servidor HTTP con apagado ordenado.
 	srv := &http.Server{

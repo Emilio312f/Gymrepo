@@ -15,9 +15,11 @@ type Config struct {
 	DBUser     string
 	DBPassword string
 	DBName     string
-	APIPort    string
-	JWTSecret  string
-	JWTTTL     time.Duration
+	APIPort     string
+	JWTSecret   string
+	JWTTTL      time.Duration
+	DNIApiURL   string
+	DNIApiToken string
 }
 
 // Cargar lee el entorno (y un archivo .env si existe) con valores por defecto
@@ -34,8 +36,10 @@ func Cargar() Config {
 		DBPassword: env("DB_PASSWORD", "gym"),
 		DBName:     env("DB_NAME", "gymcontrol"),
 		APIPort:    env("API_PORT", "8080"),
-		JWTSecret:  env("JWT_SECRET", "dev-secret-no-usar-en-produccion"),
-		JWTTTL:     24 * time.Hour,
+		JWTSecret:   env("JWT_SECRET", "dev-secret-no-usar-en-produccion"),
+		JWTTTL:      24 * time.Hour,
+		DNIApiURL:   env("DNI_API_URL", "https://api.apis.net.pe/v1/dni"),
+		DNIApiToken: env("DNI_API_TOKEN", ""),
 	}
 }
 

@@ -16,7 +16,6 @@ func NewService(repo Repositorio) *Service {
 }
 
 type EntradaSocio struct {
-	Codigo    string
 	Nombres   string
 	Apellidos string
 	Documento string
@@ -27,7 +26,6 @@ type EntradaSocio struct {
 func (s *Service) Crear(ctx context.Context, gimnasioID string, in EntradaSocio) (domain.Socio, error) {
 	socio := domain.Socio{
 		GimnasioID: gimnasioID,
-		Codigo:     strings.TrimSpace(in.Codigo),
 		Nombres:    strings.TrimSpace(in.Nombres),
 		Apellidos:  strings.TrimSpace(in.Apellidos),
 		Documento:  strings.TrimSpace(in.Documento),

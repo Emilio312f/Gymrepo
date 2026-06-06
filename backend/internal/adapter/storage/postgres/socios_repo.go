@@ -24,10 +24,14 @@ var _ socios.Repositorio = (*SociosRepo)(nil)
 func (r *SociosRepo) Crear(ctx context.Context, s domain.Socio) (domain.Socio, error) {
 	err := r.pool.QueryRow(ctx,
 		`INSERT INTO socio (gimnasio_id, codigo, nombres, apellidos, documento, telefono, email)
-		 VALUES ($1, $2, $3, $4, $5, NULLIF($6, ''), NULLIF($7, ''))
-		 RETURNING id, activo, created_at`,
+		 VALUES (
+		   $1,
+		   COALESCE(NULLIF($2, ''), 'S' || LPAD(((SELECT COUNT(*) FROM socio WHERE gimnasio_id = $1) + 1)::text, 4, '0')),
+		   $3, $4, $5, NULLIF($6, ''), NULLIF($7, '')
+		 )
+		 RETURNING id, codigo, activo, created_at`,
 		s.GimnasioID, s.Codigo, s.Nombres, s.Apellidos, s.Documento, s.Telefono, s.Email,
-	).Scan(&s.ID, &s.Activo, &s.CreatedAt)
+	).Scan(&s.ID, &s.Codigo, &s.Activo, &s.CreatedAt)
 	if esViolacionUnica(err) {
 		return domain.Socio{}, domain.ErrSocioDuplicado
 	}

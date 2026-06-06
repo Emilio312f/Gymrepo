@@ -45,7 +45,6 @@ func aSocioResp(s domain.Socio) socioResp {
 }
 
 type crearSocioReq struct {
-	Codigo    string `json:"codigo"`
 	Nombres   string `json:"nombres"`
 	Apellidos string `json:"apellidos"`
 	Documento string `json:"documento"`
@@ -61,13 +60,12 @@ func (h *SociosHandler) Crear(w http.ResponseWriter, r *http.Request) {
 		escribirError(w, http.StatusBadRequest, "JSON inválido")
 		return
 	}
-	if req.Codigo == "" || req.Nombres == "" || req.Apellidos == "" || req.Documento == "" {
-		escribirError(w, http.StatusBadRequest, "código, nombres, apellidos y documento son obligatorios")
+	if req.Nombres == "" || req.Apellidos == "" || req.Documento == "" {
+		escribirError(w, http.StatusBadRequest, "nombres, apellidos y documento son obligatorios")
 		return
 	}
 
 	socio, err := h.svc.Crear(r.Context(), gimnasioID, socios.EntradaSocio{
-		Codigo:    req.Codigo,
 		Nombres:   req.Nombres,
 		Apellidos: req.Apellidos,
 		Documento: req.Documento,
