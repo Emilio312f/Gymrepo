@@ -4,17 +4,19 @@ package config
 import (
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/joho/godotenv"
 )
 
 type Config struct {
-	DBHost     string
-	DBPort     string
-	DBUser     string
-	DBPassword string
-	DBName     string
+	DatabaseURL string
+	DBHost      string
+	DBPort      string
+	DBUser      string
+	DBPassword  string
+	DBName      string
 	APIPort     string
 	JWTSecret   string
 	JWTTTL      time.Duration
@@ -30,12 +32,13 @@ func Cargar() Config {
 	_ = godotenv.Load(".env", "../.env")
 
 	return Config{
-		DBHost:     env("DB_HOST", "localhost"),
-		DBPort:     env("DB_PORT", "5434"),
-		DBUser:     env("DB_USER", "gym"),
-		DBPassword: env("DB_PASSWORD", "gym"),
-		DBName:     env("DB_NAME", "gymcontrol"),
-		APIPort:    env("API_PORT", "8080"),
+		DatabaseURL: env("DATABASE_URL", ""),
+		DBHost:      env("DB_HOST", "localhost"),
+		DBPort:      env("DB_PORT", "5434"),
+		DBUser:      env("DB_USER", "gym"),
+		DBPassword:  env("DB_PASSWORD", "gym"),
+		DBName:      env("DB_NAME", "gymcontrol"),
+		APIPort:     env("PORT", env("API_PORT", "8080")),
 		JWTSecret:   env("JWT_SECRET", "dev-secret-no-usar-en-produccion"),
 		JWTTTL:      24 * time.Hour,
 		DNIApiURL:   env("DNI_API_URL", "https://api.apis.net.pe/v1/dni"),
@@ -44,13 +47,23 @@ func Cargar() Config {
 }
 
 // DSN para conexiones de la aplicación (pgxpool).
+// En la nube se usa DATABASE_URL; en local se arma desde las variables DB_*.
 func (c Config) DSN() string {
+	if c.DatabaseURL != "" {
+		return c.DatabaseURL
+	}
 	return fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable",
 		c.DBUser, c.DBPassword, c.DBHost, c.DBPort, c.DBName)
 }
 
 // MigrateURL usa el esquema pgx5:// que entiende golang-migrate.
 func (c Config) MigrateURL() string {
+	if c.DatabaseURL != "" {
+		url := c.DatabaseURL
+		url = strings.Replace(url, "postgresql://", "pgx5://", 1)
+		url = strings.Replace(url, "postgres://", "pgx5://", 1)
+		return url
+	}
 	return fmt.Sprintf("pgx5://%s:%s@%s:%s/%s?sslmode=disable",
 		c.DBUser, c.DBPassword, c.DBHost, c.DBPort, c.DBName)
 }
