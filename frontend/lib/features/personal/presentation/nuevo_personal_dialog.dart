@@ -29,6 +29,7 @@ class _NuevoPersonalDialogState extends ConsumerState<_NuevoPersonalDialog> {
   String _rol = 'recepcion';
 
   bool _guardando = false;
+  bool _ocultarPassword = true;
   String? _error;
 
   @override
@@ -101,9 +102,21 @@ class _NuevoPersonalDialogState extends ConsumerState<_NuevoPersonalDialog> {
               _lbl('Contraseña'),
               const SizedBox(height: 6),
               TextField(
-                  controller: _password,
-                  decoration:
-                      const InputDecoration(hintText: 'Mínimo 6 caracteres')),
+                controller: _password,
+                obscureText: _ocultarPassword,
+                decoration: InputDecoration(
+                  hintText: 'Mínimo 6 caracteres',
+                  suffixIcon: IconButton(
+                    iconSize: 20,
+                    color: AppColors.textoSecundario,
+                    icon: Icon(_ocultarPassword
+                        ? Icons.visibility_outlined
+                        : Icons.visibility_off_outlined),
+                    onPressed: () => setState(
+                        () => _ocultarPassword = !_ocultarPassword),
+                  ),
+                ),
+              ),
               const SizedBox(height: 16),
               _lbl('Rol'),
               const SizedBox(height: 6),

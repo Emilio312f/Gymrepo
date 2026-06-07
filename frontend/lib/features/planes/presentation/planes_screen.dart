@@ -3,6 +3,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/theme/app_theme.dart';
+import '../../../core/widgets/app_page.dart';
 import '../data/planes_repository.dart';
 import 'planes_controller.dart';
 import 'nuevo_plan_dialog.dart';
@@ -14,84 +15,53 @@ class PlanesScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final estado = ref.watch(planesControllerProvider);
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(28, 26, 28, 16),
-          child: Row(
-            children: [
-              const Expanded(
+    return AppPage(
+      titulo: 'Planes',
+      subtitulo: 'Planes de membresía que ofrece tu gimnasio',
+      accion: FilledButton.icon(
+        onPressed: () => mostrarNuevoPlanDialog(context),
+        icon: const Icon(Icons.add, size: 20),
+        label: const Text('Nuevo plan'),
+        style: FilledButton.styleFrom(
+            minimumSize: const Size(0, 44),
+            padding: const EdgeInsets.symmetric(horizontal: 18)),
+      ),
+      child: estado.when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (e, _) => const Center(
+          child: Text('No se pudieron cargar los planes',
+              style: TextStyle(color: AppColors.textoSecundario)),
+        ),
+        data: (planes) {
+          if (planes.isEmpty) {
+            return const Center(
+              child: Padding(
+                padding: EdgeInsets.only(top: 60),
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text('Planes',
-                        style: TextStyle(
-                            fontSize: 24, fontWeight: FontWeight.w700)),
-                    SizedBox(height: 2),
-                    Text('Planes de membresía que ofrece tu gimnasio',
+                    Icon(Icons.card_membership_outlined,
+                        size: 44, color: AppColors.textoSecundario),
+                    SizedBox(height: 14),
+                    Text('Aún no hay planes. Crea el primero con "Nuevo plan".',
                         style: TextStyle(color: AppColors.textoSecundario)),
                   ],
                 ),
               ),
-              FilledButton.icon(
-                onPressed: () => mostrarNuevoPlanDialog(context),
-                icon: const Icon(Icons.add, size: 20),
-                label: const Text('Nuevo plan'),
-                style: FilledButton.styleFrom(
-                    minimumSize: const Size(0, 44),
-                    padding: const EdgeInsets.symmetric(horizontal: 18)),
-              ),
+            );
+          }
+          return Wrap(
+            spacing: 16,
+            runSpacing: 16,
+            children: [
+              for (var i = 0; i < planes.length; i++)
+                _PlanCard(plan: planes[i])
+                    .animate()
+                    .fadeIn(duration: 250.ms, delay: (i * 50).ms),
             ],
-          ),
-        ),
-        Expanded(
-          child: estado.when(
-            loading: () => const Center(child: CircularProgressIndicator()),
-            error: (e, _) => Center(
-              child: Text('No se pudieron cargar los planes',
-                  style: TextStyle(color: AppColors.textoSecundario)),
-            ),
-            data: (planes) {
-              if (planes.isEmpty) {
-                return const Center(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.card_membership_outlined,
-                          size: 48, color: AppColors.textoSecundario),
-                      SizedBox(height: 16),
-                      Text('Aún no hay planes.\nCrea el primero con "Nuevo plan".',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(color: AppColors.textoSecundario)),
-                    ],
-                  ),
-                );
-              }
-              return Center(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 820),
-                  child: ListView(
-                    padding: const EdgeInsets.fromLTRB(28, 4, 28, 40),
-                    children: [
-                      Wrap(
-                        spacing: 16,
-                        runSpacing: 16,
-                        children: [
-                          for (var i = 0; i < planes.length; i++)
-                            _PlanCard(plan: planes[i])
-                                .animate()
-                                .fadeIn(duration: 250.ms, delay: (i * 50).ms),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            },
-          ),
-        ),
-      ],
+          );
+        },
+      ),
     );
   }
 }

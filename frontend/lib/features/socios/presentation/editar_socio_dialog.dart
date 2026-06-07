@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/validators.dart';
 import '../../../core/widgets/app_dropdown.dart';
+import '../../../core/widgets/selector_fecha.dart';
 import '../data/socios_repository.dart';
 import 'socios_controller.dart';
 
@@ -71,12 +72,12 @@ class _EditarSocioDialogState extends ConsumerState<_EditarSocioDialog> {
   Future<void> _elegirFecha() async {
     final hoy = DateTime.now();
     final maxima = DateTime(hoy.year - 18, hoy.month, hoy.day);
-    final f = await showDatePicker(
-      context: context,
-      initialDate: _fechaNacimiento ?? maxima,
-      firstDate: DateTime(1920),
-      lastDate: maxima,
-      helpText: 'Fecha de nacimiento (mayor de 18)',
+    final f = await seleccionarFecha(
+      context,
+      inicial: _fechaNacimiento,
+      primera: DateTime(1920),
+      ultima: maxima,
+      titulo: 'Fecha de nacimiento',
     );
     if (f != null) setState(() => _fechaNacimiento = f);
   }
@@ -207,7 +208,11 @@ class _EditarSocioDialogState extends ConsumerState<_EditarSocioDialog> {
               const SizedBox(height: 14),
               Row(
                 children: [
-                  Expanded(child: _campo('Teléfono', _telefono)),
+                  Expanded(
+                      child: _campo('Teléfono', _telefono,
+                          teclado: TextInputType.phone,
+                          formatos: [FilteringTextInputFormatter.digitsOnly],
+                          maxLen: 9)),
                   const SizedBox(width: 12),
                   Expanded(child: _campo('Correo', _email)),
                 ],

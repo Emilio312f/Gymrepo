@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/validators.dart';
 import '../../../core/widgets/app_dropdown.dart';
+import '../../../core/widgets/selector_fecha.dart';
 import '../data/documento_repository.dart';
 import 'socios_controller.dart';
 
@@ -88,12 +89,12 @@ class _NuevoSocioDialogState extends ConsumerState<_NuevoSocioDialog> {
   Future<void> _elegirFecha() async {
     final hoy = DateTime.now();
     final maxima = DateTime(hoy.year - 18, hoy.month, hoy.day);
-    final f = await showDatePicker(
-      context: context,
-      initialDate: _fechaNacimiento ?? maxima,
-      firstDate: DateTime(1920),
-      lastDate: maxima,
-      helpText: 'Fecha de nacimiento (mayor de 18)',
+    final f = await seleccionarFecha(
+      context,
+      inicial: _fechaNacimiento,
+      primera: DateTime(1920),
+      ultima: maxima,
+      titulo: 'Fecha de nacimiento',
     );
     if (f != null) setState(() => _fechaNacimiento = f);
   }
@@ -277,12 +278,12 @@ class _NuevoSocioDialogState extends ConsumerState<_NuevoSocioDialog> {
                         TextField(
                           controller: _telefono,
                           keyboardType: TextInputType.phone,
-                          maxLength: 15,
+                          maxLength: 9,
                           inputFormatters: [
                             FilteringTextInputFormatter.digitsOnly
                           ],
                           decoration: const InputDecoration(
-                              hintText: 'Teléfono', counterText: ''),
+                              hintText: '9 dígitos', counterText: ''),
                         ),
                       ],
                     ),

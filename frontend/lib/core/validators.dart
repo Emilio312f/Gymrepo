@@ -31,8 +31,8 @@ class Validadores {
   static String? telefono(String v) {
     final t = v.trim();
     if (t.isEmpty) return 'El teléfono es obligatorio';
-    if (t.length < 6 || t.length > 15 || !_soloDigitos.hasMatch(t)) {
-      return 'Teléfono inválido (solo números)';
+    if (t.length != 9 || !_soloDigitos.hasMatch(t)) {
+      return 'El teléfono debe tener 9 dígitos';
     }
     return null;
   }
