@@ -9,6 +9,7 @@ import '../../features/socios/presentation/socios_screen.dart';
 import '../../features/socios/presentation/socio_detalle_screen.dart';
 import '../../features/planes/presentation/planes_screen.dart';
 import '../../features/personal/presentation/personal_screen.dart';
+import '../../features/asistencia/presentation/asistencia_screen.dart';
 
 final appRouterProvider = Provider<GoRouter>((ref) {
   return GoRouter(
@@ -46,6 +47,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
               path: '/personal',
               pageBuilder: (context, state) =>
                   const NoTransitionPage(child: PersonalScreen())),
+          GoRoute(
+              path: '/asistencia',
+              pageBuilder: (context, state) =>
+                  const NoTransitionPage(child: AsistenciaScreen())),
         ],
       ),
     ],
