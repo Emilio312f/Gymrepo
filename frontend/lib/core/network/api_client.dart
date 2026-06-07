@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 const String baseUrl = String.fromEnvironment(
   'API_URL',
-  defaultValue: 'http://localhost:8080/api/v1',
+  defaultValue: 'https://gymcontrol-api-y5v2.onrender.com/api/v1',
 );
 
 final tokenProvider = StateProvider<String?>((ref) => null);
