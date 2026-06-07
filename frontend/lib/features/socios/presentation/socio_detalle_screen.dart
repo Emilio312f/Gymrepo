@@ -6,6 +6,7 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/app_page.dart';
 import '../../membresias/data/membresias_repository.dart';
 import '../../membresias/presentation/registrar_pago_dialog.dart';
+import '../../membresias/presentation/asignar_plan_dialog.dart';
 import '../data/socios_repository.dart';
 import 'socios_controller.dart';
 import 'crear_acceso_dialog.dart';
@@ -233,6 +234,8 @@ class SocioDetalleScreen extends ConsumerWidget {
               const SizedBox(height: 16),
               _MembresiaSeccion(socioId: socio.id),
               const SizedBox(height: 16),
+              _PendienteSeccion(socioId: socio.id),
+              const SizedBox(height: 16),
               _AccesoSeccion(socio: socio),
             ],
           ),
@@ -419,6 +422,188 @@ class _MembresiaSeccion extends ConsumerWidget {
           Text(v,
               style:
                   const TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
+        ],
+      ),
+    );
+  }
+}
+
+class _PendienteSeccion extends ConsumerWidget {
+  final String socioId;
+
+  const _PendienteSeccion({required this.socioId});
+
+  Future<void> _accion(
+      BuildContext context, WidgetRef ref, Future<void> Function() op,
+      String ok) async {
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      await op();
+      ref.invalidate(pendienteAdminProvider(socioId));
+      ref.invalidate(estadoMembresiaProvider(socioId));
+      ref.invalidate(sociosControllerProvider);
+      messenger.showSnackBar(SnackBar(content: Text(ok)));
+    } catch (_) {
+      messenger
+          .showSnackBar(const SnackBar(content: Text('No se pudo completar')));
+    }
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final pendiente = ref.watch(pendienteAdminProvider(socioId));
+    final repo = ref.read(membresiasRepositoryProvider);
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: AppColors.superficie,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.borde),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Expanded(
+                child: Text('Pago pendiente',
+                    style:
+                        TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
+              ),
+              pendiente.maybeWhen(
+                data: (p) => p.tienePendiente
+                    ? const SizedBox.shrink()
+                    : OutlinedButton.icon(
+                        onPressed: () =>
+                            mostrarAsignarPlanDialog(context, socioId),
+                        icon: const Icon(Icons.add, size: 18),
+                        label: const Text('Asignar plan'),
+                        style: OutlinedButton.styleFrom(
+                          minimumSize: const Size(0, 42),
+                          foregroundColor: AppColors.acento,
+                          side: const BorderSide(color: AppColors.borde),
+                        ),
+                      ),
+                orElse: () => const SizedBox.shrink(),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          pendiente.when(
+            loading: () => const Padding(
+                padding: EdgeInsets.all(8),
+                child: Center(child: CircularProgressIndicator())),
+            error: (e, _) => const Text('No se pudo cargar el pago pendiente',
+                style: TextStyle(color: AppColors.textoSecundario)),
+            data: (p) {
+              if (!p.tienePendiente) {
+                return const Text(
+                    'Sin plan pendiente. Asigna un plan para que el socio lo pague desde su app.',
+                    style: TextStyle(color: AppColors.textoSecundario));
+              }
+              final enRevision = p.enRevision;
+              final color =
+                  enRevision ? AppColors.advertencia : AppColors.textoSecundario;
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: color.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                            enRevision ? 'EN REVISIÓN' : 'PENDIENTE DE PAGO',
+                            style: TextStyle(
+                                color: color,
+                                fontWeight: FontWeight.w700,
+                                fontSize: 12)),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                            '${p.planNombre} · S/ ${p.precio.toStringAsFixed(2)}',
+                            style:
+                                const TextStyle(fontWeight: FontWeight.w600)),
+                      ),
+                    ],
+                  ),
+                  if (enRevision) ...[
+                    const SizedBox(height: 14),
+                    Row(
+                      children: [
+                        const SizedBox(
+                            width: 160,
+                            child: Text('N° de operación Yape',
+                                style: TextStyle(
+                                    color: AppColors.textoSecundario,
+                                    fontSize: 14))),
+                        Text(p.operacion,
+                            style: const TextStyle(
+                                fontSize: 14, fontWeight: FontWeight.w600)),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton(
+                            onPressed: () => _accion(context, ref,
+                                () => repo.rechazarPago(p.membresiaId),
+                                'Pago rechazado'),
+                            style: OutlinedButton.styleFrom(
+                              minimumSize: const Size(0, 44),
+                              foregroundColor: AppColors.peligro,
+                              side: const BorderSide(color: AppColors.borde),
+                            ),
+                            child: const Text('Rechazar'),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: FilledButton(
+                            onPressed: () => _accion(context, ref,
+                                () => repo.confirmarPago(p.membresiaId),
+                                'Pago confirmado, membresía activada'),
+                            style: FilledButton.styleFrom(
+                                minimumSize: const Size(0, 44),
+                                backgroundColor: AppColors.exito),
+                            child: const Text('Confirmar pago'),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ] else ...[
+                    const SizedBox(height: 12),
+                    const Text(
+                        'Esperando que el socio pague desde su app.',
+                        style: TextStyle(color: AppColors.textoSecundario)),
+                    const SizedBox(height: 12),
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: OutlinedButton(
+                        onPressed: () => _accion(context, ref,
+                            () => repo.cancelarPendiente(p.membresiaId),
+                            'Asignación cancelada'),
+                        style: OutlinedButton.styleFrom(
+                          minimumSize: const Size(0, 44),
+                          foregroundColor: AppColors.peligro,
+                          side: const BorderSide(color: AppColors.borde),
+                        ),
+                        child: const Text('Cancelar asignación'),
+                      ),
+                    ),
+                  ],
+                ],
+              );
+            },
+          ),
         ],
       ),
     );

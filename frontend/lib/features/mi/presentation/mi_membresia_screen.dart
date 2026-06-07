@@ -7,6 +7,7 @@ import '../../auth/presentation/auth_controller.dart';
 import '../../membresias/data/membresias_repository.dart';
 import '../../planes/data/planes_repository.dart';
 import '../data/mi_repository.dart';
+import 'pagar_dialog.dart';
 
 final _planesActivosProvider = FutureProvider<List<Plan>>((ref) {
   return ref.watch(planesRepositoryProvider).listar(soloActivos: true);
@@ -26,6 +27,7 @@ class MiMembresiaScreen extends ConsumerWidget {
       accion: OutlinedButton.icon(
         onPressed: () {
           ref.invalidate(miMembresiaProvider);
+          ref.invalidate(miPendienteProvider);
           ref.invalidate(_planesActivosProvider);
         },
         icon: const Icon(Icons.refresh, size: 18),
@@ -39,6 +41,15 @@ class MiMembresiaScreen extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          ref.watch(miPendienteProvider).maybeWhen(
+                data: (p) => p.tienePendiente
+                    ? Padding(
+                        padding: const EdgeInsets.only(bottom: 16),
+                        child: _TarjetaPendiente(pendiente: p),
+                      )
+                    : const SizedBox.shrink(),
+                orElse: () => const SizedBox.shrink(),
+              ),
           membresia.when(
             loading: () => const Padding(
               padding: EdgeInsets.all(40),
@@ -71,6 +82,73 @@ class MiMembresiaScreen extends ConsumerWidget {
                   );
                 },
               ),
+        ],
+      ),
+    );
+  }
+}
+
+class _TarjetaPendiente extends StatelessWidget {
+  final MembresiaPendiente pendiente;
+
+  const _TarjetaPendiente({required this.pendiente});
+
+  @override
+  Widget build(BuildContext context) {
+    final enRevision = pendiente.enRevision;
+    final color = enRevision ? AppColors.advertencia : AppColors.acento;
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.06),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: color.withValues(alpha: 0.4)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(enRevision ? Icons.hourglass_top : Icons.payments_outlined,
+                  color: color, size: 22),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                    enRevision ? 'Pago en revisión' : 'Tienes un plan por pagar',
+                    style: const TextStyle(
+                        fontWeight: FontWeight.w700, fontSize: 16)),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: Text(pendiente.planNombre,
+                    style: const TextStyle(fontWeight: FontWeight.w600)),
+              ),
+              Text('S/ ${pendiente.precio.toStringAsFixed(2)}',
+                  style: TextStyle(
+                      fontWeight: FontWeight.w700, fontSize: 18, color: color)),
+            ],
+          ),
+          const SizedBox(height: 14),
+          if (enRevision)
+            Text(
+                'Tu gimnasio está validando tu pago (operación ${pendiente.operacion}). En cuanto lo confirme, tu membresía se activará.',
+                style: const TextStyle(
+                    color: AppColors.textoSecundario, fontSize: 13))
+          else
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                onPressed: () => mostrarPagarDialog(context, pendiente),
+                icon: const Icon(Icons.qr_code_2, size: 18),
+                label: const Text('Pagar con Yape'),
+                style:
+                    FilledButton.styleFrom(minimumSize: const Size(0, 48)),
+              ),
+            ),
         ],
       ),
     );

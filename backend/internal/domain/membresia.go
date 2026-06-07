@@ -12,6 +12,7 @@ type Membresia struct {
 	FechaFin     string
 	PrecioPagado float64
 	Estado       string
+	Operacion    string
 	CreatedAt    time.Time
 }
 

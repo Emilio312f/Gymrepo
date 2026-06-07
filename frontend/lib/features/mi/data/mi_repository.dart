@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/network/api_client.dart';
 import '../../membresias/data/membresias_repository.dart';
 
+export '../../membresias/data/membresias_repository.dart' show MembresiaPendiente;
+
 class MiAsistencia {
   final DateTime fechaHora;
 
@@ -65,6 +67,15 @@ class MiRepository {
     final lista = (resp.data['pagos'] as List).cast<Map<String, dynamic>>();
     return lista.map(MiPago.fromJson).toList();
   }
+
+  Future<MembresiaPendiente> miPendiente() async {
+    final resp = await _dio.get('/mi/pendiente');
+    return MembresiaPendiente.fromJson(resp.data as Map<String, dynamic>);
+  }
+
+  Future<void> pagarPendiente(String operacion) async {
+    await _dio.post('/mi/pendiente/pagar', data: {'operacion': operacion});
+  }
 }
 
 final miRepositoryProvider = Provider<MiRepository>((ref) {
@@ -81,4 +92,8 @@ final misAsistenciasProvider = FutureProvider<List<MiAsistencia>>((ref) {
 
 final misPagosProvider = FutureProvider<List<MiPago>>((ref) {
   return ref.watch(miRepositoryProvider).misPagos();
+});
+
+final miPendienteProvider = FutureProvider<MembresiaPendiente>((ref) {
+  return ref.watch(miRepositoryProvider).miPendiente();
 });

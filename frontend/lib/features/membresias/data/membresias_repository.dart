@@ -32,6 +32,37 @@ class EstadoMembresia {
   }
 }
 
+class MembresiaPendiente {
+  final bool tienePendiente;
+  final String membresiaId;
+  final String planNombre;
+  final double precio;
+  final String estado;
+  final String operacion;
+
+  const MembresiaPendiente({
+    required this.tienePendiente,
+    required this.membresiaId,
+    required this.planNombre,
+    required this.precio,
+    required this.estado,
+    required this.operacion,
+  });
+
+  bool get enRevision => estado == 'en_revision';
+
+  factory MembresiaPendiente.fromJson(Map<String, dynamic> json) {
+    return MembresiaPendiente(
+      tienePendiente: json['tiene_pendiente'] as bool? ?? false,
+      membresiaId: json['membresia_id'] as String? ?? '',
+      planNombre: json['plan_nombre'] as String? ?? '',
+      precio: (json['precio'] as num?)?.toDouble() ?? 0,
+      estado: json['estado'] as String? ?? '',
+      operacion: json['operacion'] as String? ?? '',
+    );
+  }
+}
+
 class MembresiasRepository {
   final Dio _dio;
 
@@ -47,6 +78,27 @@ class MembresiasRepository {
     await _dio.post('/socios/$socioId/pagos',
         data: {'plan_id': planId, 'metodo': metodo});
   }
+
+  Future<MembresiaPendiente> pendiente(String socioId) async {
+    final resp = await _dio.get('/socios/$socioId/pendiente');
+    return MembresiaPendiente.fromJson(resp.data as Map<String, dynamic>);
+  }
+
+  Future<void> asignarPlan(String socioId, String planId) async {
+    await _dio.post('/socios/$socioId/asignar-plan', data: {'plan_id': planId});
+  }
+
+  Future<void> confirmarPago(String membresiaId) async {
+    await _dio.post('/membresias/$membresiaId/confirmar');
+  }
+
+  Future<void> rechazarPago(String membresiaId) async {
+    await _dio.post('/membresias/$membresiaId/rechazar');
+  }
+
+  Future<void> cancelarPendiente(String membresiaId) async {
+    await _dio.post('/membresias/$membresiaId/cancelar');
+  }
 }
 
 final membresiasRepositoryProvider = Provider<MembresiasRepository>((ref) {
@@ -56,4 +108,9 @@ final membresiasRepositoryProvider = Provider<MembresiasRepository>((ref) {
 final estadoMembresiaProvider =
     FutureProvider.family<EstadoMembresia, String>((ref, socioId) {
   return ref.watch(membresiasRepositoryProvider).estadoActual(socioId);
+});
+
+final pendienteAdminProvider =
+    FutureProvider.family<MembresiaPendiente, String>((ref, socioId) {
+  return ref.watch(membresiasRepositoryProvider).pendiente(socioId);
 });

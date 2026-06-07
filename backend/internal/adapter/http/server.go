@@ -62,6 +62,15 @@ func NuevoRouter(authH *AuthHandler, sociosH *SociosHandler, docH *DocumentoHand
 					r.Get("/{id}/membresia", membresiasH.EstadoActual)
 					r.Get("/{id}/membresias", membresiasH.Historial)
 					r.Post("/{id}/pagos", membresiasH.RegistrarPago)
+					r.Post("/{id}/asignar-plan", membresiasH.AsignarPlan)
+					r.Get("/{id}/pendiente", membresiasH.Pendiente)
+				})
+
+			r.With(RequiereRol(string(domain.RolAdmin), string(domain.RolRecepcion))).
+				Route("/membresias", func(r chi.Router) {
+					r.Post("/{mid}/confirmar", membresiasH.Confirmar)
+					r.Post("/{mid}/rechazar", membresiasH.Rechazar)
+					r.Post("/{mid}/cancelar", membresiasH.Cancelar)
 				})
 
 			r.Route("/planes", func(r chi.Router) {
@@ -77,6 +86,8 @@ func NuevoRouter(authH *AuthHandler, sociosH *SociosHandler, docH *DocumentoHand
 					r.Get("/membresia", miH.Membresia)
 					r.Get("/asistencias", miH.Asistencias)
 					r.Get("/pagos", miH.Pagos)
+					r.Get("/pendiente", miH.Pendiente)
+					r.Post("/pendiente/pagar", miH.Pagar)
 				})
 
 			r.With(RequiereRol(string(domain.RolAdmin))).

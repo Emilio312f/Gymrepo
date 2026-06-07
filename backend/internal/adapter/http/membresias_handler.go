@@ -57,6 +57,138 @@ func (h *MembresiasHandler) RegistrarPago(w http.ResponseWriter, r *http.Request
 	})
 }
 
+type asignarPlanReq struct {
+	PlanID string `json:"plan_id"`
+}
+
+func (h *MembresiasHandler) AsignarPlan(w http.ResponseWriter, r *http.Request) {
+	claims := claimsDe(r.Context())
+	socioID := chi.URLParam(r, "id")
+
+	var req asignarPlanReq
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		escribirError(w, http.StatusBadRequest, "JSON inválido")
+		return
+	}
+	if req.PlanID == "" {
+		escribirError(w, http.StatusBadRequest, "el plan es obligatorio")
+		return
+	}
+
+	m, err := h.svc.AsignarPlan(r.Context(), claims.GimnasioID, socioID, req.PlanID)
+	switch {
+	case errors.Is(err, domain.ErrYaTienePendiente):
+		escribirError(w, http.StatusConflict, "el socio ya tiene un plan pendiente de pago")
+		return
+	case errors.Is(err, domain.ErrNoEncontrado):
+		escribirError(w, http.StatusNotFound, "plan no encontrado o inactivo")
+		return
+	case err != nil:
+		escribirError(w, http.StatusInternalServerError, "no se pudo asignar el plan")
+		return
+	}
+	escribirJSON(w, http.StatusCreated, map[string]any{
+		"membresia_id": m.ID,
+		"precio":       m.PrecioPagado,
+		"estado":       m.Estado,
+	})
+}
+
+type pendienteResp struct {
+	TienePendiente bool    `json:"tiene_pendiente"`
+	MembresiaID    string  `json:"membresia_id"`
+	PlanNombre     string  `json:"plan_nombre"`
+	Precio         float64 `json:"precio"`
+	Estado         string  `json:"estado"`
+	Operacion      string  `json:"operacion"`
+}
+
+func aPendienteResp(m domain.Membresia) pendienteResp {
+	return pendienteResp{
+		TienePendiente: true,
+		MembresiaID:    m.ID,
+		PlanNombre:     m.PlanNombre,
+		Precio:         m.PrecioPagado,
+		Estado:         m.Estado,
+		Operacion:      m.Operacion,
+	}
+}
+
+func (h *MembresiasHandler) Pendiente(w http.ResponseWriter, r *http.Request) {
+	claims := claimsDe(r.Context())
+	socioID := chi.URLParam(r, "id")
+
+	m, err := h.svc.Pendiente(r.Context(), claims.GimnasioID, socioID)
+	if errors.Is(err, domain.ErrNoEncontrado) {
+		escribirJSON(w, http.StatusOK, pendienteResp{TienePendiente: false})
+		return
+	}
+	if err != nil {
+		escribirError(w, http.StatusInternalServerError, "no se pudo obtener el plan pendiente")
+		return
+	}
+	escribirJSON(w, http.StatusOK, aPendienteResp(m))
+}
+
+type confirmarPagoReq struct {
+	Metodo string `json:"metodo"`
+}
+
+func (h *MembresiasHandler) Confirmar(w http.ResponseWriter, r *http.Request) {
+	claims := claimsDe(r.Context())
+	membresiaID := chi.URLParam(r, "mid")
+
+	var req confirmarPagoReq
+	_ = json.NewDecoder(r.Body).Decode(&req)
+
+	m, err := h.svc.ConfirmarPago(r.Context(), claims.GimnasioID, membresiaID, req.Metodo, claims.UsuarioID)
+	switch {
+	case errors.Is(err, domain.ErrNoEncontrado):
+		escribirError(w, http.StatusNotFound, "no hay un pago pendiente para confirmar")
+		return
+	case err != nil:
+		escribirError(w, http.StatusInternalServerError, "no se pudo confirmar el pago")
+		return
+	}
+	escribirJSON(w, http.StatusOK, map[string]any{
+		"id":        m.ID,
+		"fecha_fin": m.FechaFin,
+		"estado":    m.Estado,
+	})
+}
+
+func (h *MembresiasHandler) Rechazar(w http.ResponseWriter, r *http.Request) {
+	claims := claimsDe(r.Context())
+	membresiaID := chi.URLParam(r, "mid")
+
+	err := h.svc.RechazarPago(r.Context(), claims.GimnasioID, membresiaID)
+	switch {
+	case errors.Is(err, domain.ErrNoEncontrado):
+		escribirError(w, http.StatusNotFound, "no hay un pago en revisión para rechazar")
+		return
+	case err != nil:
+		escribirError(w, http.StatusInternalServerError, "no se pudo rechazar el pago")
+		return
+	}
+	escribirJSON(w, http.StatusOK, map[string]bool{"ok": true})
+}
+
+func (h *MembresiasHandler) Cancelar(w http.ResponseWriter, r *http.Request) {
+	claims := claimsDe(r.Context())
+	membresiaID := chi.URLParam(r, "mid")
+
+	err := h.svc.CancelarPendiente(r.Context(), claims.GimnasioID, membresiaID)
+	switch {
+	case errors.Is(err, domain.ErrNoEncontrado):
+		escribirError(w, http.StatusNotFound, "no hay un plan pendiente para cancelar")
+		return
+	case err != nil:
+		escribirError(w, http.StatusInternalServerError, "no se pudo cancelar el plan")
+		return
+	}
+	escribirJSON(w, http.StatusOK, map[string]bool{"ok": true})
+}
+
 func (h *MembresiasHandler) EstadoActual(w http.ResponseWriter, r *http.Request) {
 	claims := claimsDe(r.Context())
 	socioID := chi.URLParam(r, "id")
