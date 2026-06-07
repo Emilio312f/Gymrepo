@@ -49,3 +49,32 @@ func (r *PagosRepo) Listar(ctx context.Context, gimnasioID, desde, hasta string)
 	}
 	return lista, rows.Err()
 }
+
+func (r *PagosRepo) ListarPorSocio(ctx context.Context, gimnasioID, socioID string) ([]domain.Pago, error) {
+	rows, err := r.pool.Query(ctx,
+		`SELECT p.id, s.nombres || ' ' || s.apellidos, s.documento, pl.nombre,
+		        p.monto::float8, p.metodo, p.fecha_pago
+		 FROM pago p
+		 JOIN membresia m ON m.id = p.membresia_id
+		 JOIN socio s ON s.id = m.socio_id
+		 JOIN plan pl ON pl.id = m.plan_id
+		 WHERE p.gimnasio_id = $1 AND m.socio_id = $2
+		 ORDER BY p.fecha_pago DESC`,
+		gimnasioID, socioID,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	lista := make([]domain.Pago, 0)
+	for rows.Next() {
+		var p domain.Pago
+		if err := rows.Scan(&p.ID, &p.SocioNombre, &p.Documento, &p.PlanNombre,
+			&p.Monto, &p.Metodo, &p.FechaPago); err != nil {
+			return nil, err
+		}
+		lista = append(lista, p)
+	}
+	return lista, rows.Err()
+}

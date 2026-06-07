@@ -32,9 +32,11 @@ class _NuevoSocioDialogState extends ConsumerState<_NuevoSocioDialog> {
   final _direccion = TextEditingController();
   final _telefono = TextEditingController();
   final _email = TextEditingController();
+  final _password = TextEditingController();
 
   String? _sexo;
   DateTime? _fechaNacimiento;
+  bool _crearAcceso = false;
 
   bool _guardando = false;
   bool _buscandoDni = false;
@@ -49,6 +51,7 @@ class _NuevoSocioDialogState extends ConsumerState<_NuevoSocioDialog> {
     _direccion.dispose();
     _telefono.dispose();
     _email.dispose();
+    _password.dispose();
     super.dispose();
   }
 
@@ -108,6 +111,17 @@ class _NuevoSocioDialogState extends ConsumerState<_NuevoSocioDialog> {
         Validadores.requerido(_direccion.text, 'Dirección') ??
         Validadores.telefono(_telefono.text) ??
         Validadores.email(_email.text);
+    if (error == null && _crearAcceso) {
+      if (_email.text.trim().isEmpty) {
+        setState(() => _error = 'Ingresa un correo para el acceso del socio');
+        return;
+      }
+      if (_password.text.trim().length < 6) {
+        setState(() =>
+            _error = 'La contraseña de acceso debe tener al menos 6 caracteres');
+        return;
+      }
+    }
     if (error != null) {
       setState(() => _error = error);
       return;
@@ -118,6 +132,7 @@ class _NuevoSocioDialogState extends ConsumerState<_NuevoSocioDialog> {
       _error = null;
     });
 
+    final messenger = ScaffoldMessenger.of(context);
     final err = await ref.read(sociosControllerProvider.notifier).crear(
           nombres: _nombres.text.trim(),
           apellidos: _apellidos.text.trim(),
@@ -127,11 +142,20 @@ class _NuevoSocioDialogState extends ConsumerState<_NuevoSocioDialog> {
           sexo: _sexo ?? '',
           direccion: _direccion.text.trim(),
           fechaNacimiento: _fmt(_fechaNacimiento!),
+          accesoEmail: _crearAcceso ? _email.text.trim() : '',
+          accesoPassword: _crearAcceso ? _password.text.trim() : '',
         );
 
     if (!mounted) return;
     if (err == null) {
       Navigator.of(context).pop();
+      if (_crearAcceso) {
+        messenger.showSnackBar(
+            const SnackBar(content: Text('Socio y acceso creados')));
+      }
+    } else if (err.startsWith('Socio creado')) {
+      Navigator.of(context).pop();
+      messenger.showSnackBar(SnackBar(content: Text(err)));
     } else {
       setState(() {
         _guardando = false;
@@ -304,6 +328,56 @@ class _NuevoSocioDialogState extends ConsumerState<_NuevoSocioDialog> {
                     ),
                   ),
                 ],
+              ),
+              const SizedBox(height: 16),
+              Container(
+                decoration: BoxDecoration(
+                  color: AppColors.fondo,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppColors.borde),
+                ),
+                child: Column(
+                  children: [
+                    SwitchListTile(
+                      value: _crearAcceso,
+                      onChanged: (v) => setState(() => _crearAcceso = v),
+                      contentPadding:
+                          const EdgeInsets.symmetric(horizontal: 14),
+                      title: const Text('Dar acceso a la app',
+                          style: TextStyle(
+                              fontSize: 14, fontWeight: FontWeight.w600)),
+                      subtitle: const Text(
+                          'El socio podrá ver su membresía, asistencias y pagos',
+                          style: TextStyle(
+                              fontSize: 12,
+                              color: AppColors.textoSecundario)),
+                    ),
+                    if (_crearAcceso)
+                      Padding(
+                        padding:
+                            const EdgeInsets.fromLTRB(14, 0, 14, 14),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const _Etiqueta('Contraseña'),
+                            const SizedBox(height: 6),
+                            TextField(
+                              controller: _password,
+                              obscureText: true,
+                              decoration: const InputDecoration(
+                                  hintText: 'Mínimo 6 caracteres'),
+                            ),
+                            const SizedBox(height: 6),
+                            const Text(
+                                'Inicia sesión con el correo de arriba y esta contraseña.',
+                                style: TextStyle(
+                                    fontSize: 12,
+                                    color: AppColors.textoSecundario)),
+                          ],
+                        ),
+                      ),
+                  ],
+                ),
               ),
               if (_error != null) ...[
                 const SizedBox(height: 16),

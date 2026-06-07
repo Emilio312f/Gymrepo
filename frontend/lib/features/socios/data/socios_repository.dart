@@ -15,6 +15,7 @@ class Socio {
   final String direccion;
   final String fechaNacimiento;
   final bool activo;
+  final bool tieneAcceso;
 
   const Socio({
     required this.id,
@@ -28,6 +29,7 @@ class Socio {
     required this.direccion,
     required this.fechaNacimiento,
     required this.activo,
+    required this.tieneAcceso,
   });
 
   String get nombreCompleto => '$nombres $apellidos';
@@ -51,6 +53,7 @@ class Socio {
       direccion: json['direccion'] as String? ?? '',
       fechaNacimiento: json['fecha_nacimiento'] as String? ?? '',
       activo: json['activo'] as bool? ?? false,
+      tieneAcceso: json['tiene_acceso'] as bool? ?? false,
     );
   }
 }
@@ -97,6 +100,11 @@ class SociosRepository {
 
   Future<void> cambiarEstado(String id, bool activo) async {
     await _dio.patch('/socios/$id/estado', data: {'activo': activo});
+  }
+
+  Future<void> crearAcceso(String id, String email, String password) async {
+    await _dio.post('/socios/$id/acceso',
+        data: {'email': email, 'password': password});
   }
 
   Future<Socio> crear({

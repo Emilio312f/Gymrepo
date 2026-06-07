@@ -24,11 +24,12 @@ func validarDatos(in EntradaSocio) error {
 }
 
 type Service struct {
-	repo Repositorio
+	repo   Repositorio
+	hasher Hasher
 }
 
-func NewService(repo Repositorio) *Service {
-	return &Service{repo: repo}
+func NewService(repo Repositorio, hasher Hasher) *Service {
+	return &Service{repo: repo, hasher: hasher}
 }
 
 type EntradaSocio struct {
@@ -90,4 +91,38 @@ func (s *Service) Actualizar(ctx context.Context, gimnasioID, id string, in Entr
 
 func (s *Service) CambiarEstado(ctx context.Context, gimnasioID, id string, activo bool) error {
 	return s.repo.CambiarEstado(ctx, gimnasioID, id, activo)
+}
+
+func (s *Service) ObtenerPorUsuario(ctx context.Context, gimnasioID, usuarioID string) (domain.Socio, error) {
+	return s.repo.ObtenerPorUsuario(ctx, gimnasioID, usuarioID)
+}
+
+type EntradaAcceso struct {
+	Email    string
+	Password string
+}
+
+func (s *Service) CrearAcceso(ctx context.Context, gimnasioID, socioID string, in EntradaAcceso) error {
+	email := strings.ToLower(strings.TrimSpace(in.Email))
+	if !strings.Contains(email, "@") || len(strings.TrimSpace(in.Password)) < 6 {
+		return domain.ErrDatosInvalidos
+	}
+	socio, err := s.repo.Obtener(ctx, gimnasioID, socioID)
+	if err != nil {
+		return err
+	}
+	hash, err := s.hasher.Hash(strings.TrimSpace(in.Password))
+	if err != nil {
+		return err
+	}
+	u := domain.Usuario{
+		GimnasioID:   gimnasioID,
+		Email:        email,
+		PasswordHash: hash,
+		Rol:          domain.RolSocio,
+		Nombre:       strings.TrimSpace(socio.Nombres + " " + socio.Apellidos),
+		Activo:       true,
+	}
+	_, err = s.repo.CrearAcceso(ctx, gimnasioID, socioID, u)
+	return err
 }

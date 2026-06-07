@@ -12,6 +12,7 @@ type Repositorio interface {
 	BuscarSocio(ctx context.Context, gimnasioID, consulta string) (domain.Socio, error)
 	Registrar(ctx context.Context, gimnasioID, socioID string) (time.Time, error)
 	ListarDelDia(ctx context.Context, gimnasioID string) ([]Asistencia, error)
+	ListarPorSocio(ctx context.Context, gimnasioID, socioID string) ([]Asistencia, error)
 }
 
 type ConsultorMembresia interface {
@@ -75,4 +76,8 @@ func (s *Service) ValidarAcceso(ctx context.Context, gimnasioID, consulta string
 
 func (s *Service) ListarDelDia(ctx context.Context, gimnasioID string) ([]Asistencia, error) {
 	return s.repo.ListarDelDia(ctx, gimnasioID)
+}
+
+func (s *Service) ListarPorSocio(ctx context.Context, gimnasioID, socioID string) ([]Asistencia, error) {
+	return s.repo.ListarPorSocio(ctx, gimnasioID, socioID)
 }

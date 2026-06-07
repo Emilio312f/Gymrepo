@@ -59,7 +59,7 @@ func main() {
 	dniCliente := dni.NewCliente(cfg.DNIApiURL, cfg.DNIApiToken)
 
 	authSvc := auth.NewService(authRepo, hasher, jwt)
-	sociosSvc := socios.NewService(sociosRepo)
+	sociosSvc := socios.NewService(sociosRepo, hasher)
 	planesSvc := planes.NewService(planesRepo)
 	membresiasSvc := membresias.NewService(membresiasRepo)
 	personalSvc := personal.NewService(personalRepo, hasher)
@@ -77,8 +77,9 @@ func main() {
 	asistenciaHandler := nethttp.NewAsistenciaHandler(asistenciaSvc)
 	pagosHandler := nethttp.NewPagosHandler(pagosSvc)
 	documentoHandler := nethttp.NewDocumentoHandler(documentoSvc)
+	miHandler := nethttp.NewMiHandler(sociosSvc, membresiasSvc, asistenciaSvc, pagosSvc)
 
-	router := nethttp.NuevoRouter(authHandler, sociosHandler, documentoHandler, planesHandler, membresiasHandler, personalHandler, statsHandler, asistenciaHandler, pagosHandler, jwt)
+	router := nethttp.NuevoRouter(authHandler, sociosHandler, documentoHandler, planesHandler, membresiasHandler, personalHandler, statsHandler, asistenciaHandler, pagosHandler, miHandler, jwt)
 
 	// 4. Servidor HTTP con apagado ordenado.
 	srv := &http.Server{

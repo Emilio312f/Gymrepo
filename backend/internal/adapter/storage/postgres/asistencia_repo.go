@@ -75,3 +75,29 @@ func (r *AsistenciaRepo) ListarDelDia(ctx context.Context, gimnasioID string) ([
 	}
 	return lista, rows.Err()
 }
+
+func (r *AsistenciaRepo) ListarPorSocio(ctx context.Context, gimnasioID, socioID string) ([]asistencia.Asistencia, error) {
+	rows, err := r.pool.Query(ctx,
+		`SELECT a.fecha_hora, s.nombres, s.apellidos, s.documento, s.codigo
+		 FROM asistencia a JOIN socio s ON s.id = a.socio_id
+		 WHERE a.gimnasio_id = $1 AND a.socio_id = $2
+		 ORDER BY a.fecha_hora DESC
+		 LIMIT 100`,
+		gimnasioID, socioID,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	lista := make([]asistencia.Asistencia, 0)
+	for rows.Next() {
+		var a asistencia.Asistencia
+		if err := rows.Scan(&a.FechaHora, &a.Nombres, &a.Apellidos,
+			&a.Documento, &a.Codigo); err != nil {
+			return nil, err
+		}
+		lista = append(lista, a)
+	}
+	return lista, rows.Err()
+}

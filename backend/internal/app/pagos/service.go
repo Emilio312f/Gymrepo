@@ -8,6 +8,7 @@ import (
 
 type Repositorio interface {
 	Listar(ctx context.Context, gimnasioID, desde, hasta string) ([]domain.Pago, error)
+	ListarPorSocio(ctx context.Context, gimnasioID, socioID string) ([]domain.Pago, error)
 }
 
 type Service struct {
@@ -28,4 +29,8 @@ func (s *Service) Listar(ctx context.Context, gimnasioID, desde, hasta string) (
 		total += p.Monto
 	}
 	return lista, total, nil
+}
+
+func (s *Service) ListarPorSocio(ctx context.Context, gimnasioID, socioID string) ([]domain.Pago, error) {
+	return s.repo.ListarPorSocio(ctx, gimnasioID, socioID)
 }

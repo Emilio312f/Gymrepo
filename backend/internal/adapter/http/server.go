@@ -13,7 +13,7 @@ import (
 )
 
 // NuevoRouter arma todas las rutas de la API.
-func NuevoRouter(authH *AuthHandler, sociosH *SociosHandler, docH *DocumentoHandler, planesH *PlanesHandler, membresiasH *MembresiasHandler, personalH *PersonalHandler, statsH *StatsHandler, asistenciaH *AsistenciaHandler, pagosH *PagosHandler, jwt *security.JWT) http.Handler {
+func NuevoRouter(authH *AuthHandler, sociosH *SociosHandler, docH *DocumentoHandler, planesH *PlanesHandler, membresiasH *MembresiasHandler, personalH *PersonalHandler, statsH *StatsHandler, asistenciaH *AsistenciaHandler, pagosH *PagosHandler, miH *MiHandler, jwt *security.JWT) http.Handler {
 	r := chi.NewRouter()
 
 	r.Use(middleware.RequestID)
@@ -58,15 +58,25 @@ func NuevoRouter(authH *AuthHandler, sociosH *SociosHandler, docH *DocumentoHand
 					r.Get("/{id}", sociosH.Obtener)
 					r.Put("/{id}", sociosH.Actualizar)
 					r.Patch("/{id}/estado", sociosH.CambiarEstado)
+					r.Post("/{id}/acceso", sociosH.CrearAcceso)
 					r.Get("/{id}/membresia", membresiasH.EstadoActual)
 					r.Get("/{id}/membresias", membresiasH.Historial)
 					r.Post("/{id}/pagos", membresiasH.RegistrarPago)
 				})
 
-			r.With(RequiereRol(string(domain.RolAdmin), string(domain.RolRecepcion))).
-				Route("/planes", func(r chi.Router) {
-					r.Get("/", planesH.Listar)
-					r.With(RequiereRol(string(domain.RolAdmin))).Post("/", planesH.Crear)
+			r.Route("/planes", func(r chi.Router) {
+				r.With(RequiereRol(string(domain.RolAdmin), string(domain.RolRecepcion), string(domain.RolSocio))).
+					Get("/", planesH.Listar)
+				r.With(RequiereRol(string(domain.RolAdmin))).Post("/", planesH.Crear)
+			})
+
+			// Auto-servicio del socio: cada socio sólo ve sus propios datos.
+			r.With(RequiereRol(string(domain.RolSocio))).
+				Route("/mi", func(r chi.Router) {
+					r.Get("/perfil", miH.Perfil)
+					r.Get("/membresia", miH.Membresia)
+					r.Get("/asistencias", miH.Asistencias)
+					r.Get("/pagos", miH.Pagos)
 				})
 
 			r.With(RequiereRol(string(domain.RolAdmin))).

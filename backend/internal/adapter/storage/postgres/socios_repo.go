@@ -44,7 +44,7 @@ func (r *SociosRepo) Crear(ctx context.Context, s domain.Socio) (domain.Socio, e
 
 func (r *SociosRepo) Listar(ctx context.Context, gimnasioID string) ([]domain.Socio, error) {
 	rows, err := r.pool.Query(ctx,
-		`SELECT id, gimnasio_id, codigo, nombres, apellidos, documento,
+		`SELECT id, gimnasio_id, COALESCE(usuario_id::text, ''), codigo, nombres, apellidos, documento,
 		        COALESCE(telefono, ''), COALESCE(email, ''),
 		        COALESCE(sexo, ''), COALESCE(direccion, ''),
 		        COALESCE(to_char(fecha_nacimiento, 'YYYY-MM-DD'), ''),
@@ -60,7 +60,7 @@ func (r *SociosRepo) Listar(ctx context.Context, gimnasioID string) ([]domain.So
 	lista := make([]domain.Socio, 0)
 	for rows.Next() {
 		var s domain.Socio
-		if err := rows.Scan(&s.ID, &s.GimnasioID, &s.Codigo, &s.Nombres, &s.Apellidos,
+		if err := rows.Scan(&s.ID, &s.GimnasioID, &s.UsuarioID, &s.Codigo, &s.Nombres, &s.Apellidos,
 			&s.Documento, &s.Telefono, &s.Email, &s.Sexo, &s.Direccion,
 			&s.FechaNacimiento, &s.Activo, &s.CreatedAt); err != nil {
 			return nil, err
@@ -73,14 +73,14 @@ func (r *SociosRepo) Listar(ctx context.Context, gimnasioID string) ([]domain.So
 func (r *SociosRepo) Obtener(ctx context.Context, gimnasioID, id string) (domain.Socio, error) {
 	var s domain.Socio
 	err := r.pool.QueryRow(ctx,
-		`SELECT id, gimnasio_id, codigo, nombres, apellidos, documento,
+		`SELECT id, gimnasio_id, COALESCE(usuario_id::text, ''), codigo, nombres, apellidos, documento,
 		        COALESCE(telefono, ''), COALESCE(email, ''),
 		        COALESCE(sexo, ''), COALESCE(direccion, ''),
 		        COALESCE(to_char(fecha_nacimiento, 'YYYY-MM-DD'), ''),
 		        activo, created_at
 		 FROM socio WHERE gimnasio_id = $1 AND id = $2`,
 		gimnasioID, id,
-	).Scan(&s.ID, &s.GimnasioID, &s.Codigo, &s.Nombres, &s.Apellidos,
+	).Scan(&s.ID, &s.GimnasioID, &s.UsuarioID, &s.Codigo, &s.Nombres, &s.Apellidos,
 		&s.Documento, &s.Telefono, &s.Email, &s.Sexo, &s.Direccion,
 		&s.FechaNacimiento, &s.Activo, &s.CreatedAt)
 	if errors.Is(err, pgx.ErrNoRows) {
@@ -90,6 +90,78 @@ func (r *SociosRepo) Obtener(ctx context.Context, gimnasioID, id string) (domain
 		return domain.Socio{}, err
 	}
 	return s, nil
+}
+
+func (r *SociosRepo) ObtenerPorUsuario(ctx context.Context, gimnasioID, usuarioID string) (domain.Socio, error) {
+	var s domain.Socio
+	err := r.pool.QueryRow(ctx,
+		`SELECT id, gimnasio_id, COALESCE(usuario_id::text, ''), codigo, nombres, apellidos, documento,
+		        COALESCE(telefono, ''), COALESCE(email, ''),
+		        COALESCE(sexo, ''), COALESCE(direccion, ''),
+		        COALESCE(to_char(fecha_nacimiento, 'YYYY-MM-DD'), ''),
+		        activo, created_at
+		 FROM socio WHERE gimnasio_id = $1 AND usuario_id = $2`,
+		gimnasioID, usuarioID,
+	).Scan(&s.ID, &s.GimnasioID, &s.UsuarioID, &s.Codigo, &s.Nombres, &s.Apellidos,
+		&s.Documento, &s.Telefono, &s.Email, &s.Sexo, &s.Direccion,
+		&s.FechaNacimiento, &s.Activo, &s.CreatedAt)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return domain.Socio{}, domain.ErrNoEncontrado
+	}
+	if err != nil {
+		return domain.Socio{}, err
+	}
+	return s, nil
+}
+
+// CrearAcceso da de alta una cuenta de login (rol socio) y la enlaza al socio,
+// todo en una transacción. Falla si el socio ya tiene acceso o el email se repite.
+func (r *SociosRepo) CrearAcceso(ctx context.Context, gimnasioID, socioID string, u domain.Usuario) (string, error) {
+	tx, err := r.pool.Begin(ctx)
+	if err != nil {
+		return "", err
+	}
+	defer tx.Rollback(ctx)
+
+	var usuarioExistente *string
+	err = tx.QueryRow(ctx,
+		`SELECT usuario_id::text FROM socio WHERE gimnasio_id = $1 AND id = $2 FOR UPDATE`,
+		gimnasioID, socioID,
+	).Scan(&usuarioExistente)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return "", domain.ErrNoEncontrado
+	}
+	if err != nil {
+		return "", err
+	}
+	if usuarioExistente != nil {
+		return "", domain.ErrAccesoYaExiste
+	}
+
+	var usuarioID string
+	err = tx.QueryRow(ctx,
+		`INSERT INTO usuario (gimnasio_id, email, password_hash, rol, nombre)
+		 VALUES ($1, $2, $3, $4, $5) RETURNING id`,
+		u.GimnasioID, u.Email, u.PasswordHash, string(u.Rol), u.Nombre,
+	).Scan(&usuarioID)
+	if err != nil {
+		if esViolacionUnica(err) {
+			return "", domain.ErrEmailEnUso
+		}
+		return "", err
+	}
+
+	if _, err := tx.Exec(ctx,
+		`UPDATE socio SET usuario_id = $1 WHERE id = $2`,
+		usuarioID, socioID,
+	); err != nil {
+		return "", err
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return "", err
+	}
+	return usuarioID, nil
 }
 
 func (r *SociosRepo) Actualizar(ctx context.Context, s domain.Socio) (domain.Socio, error) {

@@ -33,7 +33,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           _email.text,
           _password.text,
         );
-    if (ok && mounted) context.go('/home');
+    if (ok && mounted) {
+      final esSocio =
+          ref.read(authControllerProvider).usuario?.rol == 'socio';
+      context.go(esSocio ? '/mi' : '/home');
+    }
   }
 
   @override

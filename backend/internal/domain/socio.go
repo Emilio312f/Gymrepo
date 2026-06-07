@@ -5,6 +5,7 @@ import "time"
 type Socio struct {
 	ID              string
 	GimnasioID      string
+	UsuarioID       string
 	Codigo          string
 	Nombres         string
 	Apellidos       string

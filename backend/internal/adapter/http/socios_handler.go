@@ -32,6 +32,7 @@ type socioResp struct {
 	Direccion       string    `json:"direccion"`
 	FechaNacimiento string    `json:"fecha_nacimiento"`
 	Activo          bool      `json:"activo"`
+	TieneAcceso     bool      `json:"tiene_acceso"`
 	CreatedAt       time.Time `json:"created_at"`
 }
 
@@ -48,6 +49,7 @@ func aSocioResp(s domain.Socio) socioResp {
 		Direccion:       s.Direccion,
 		FechaNacimiento: s.FechaNacimiento,
 		Activo:          s.Activo,
+		TieneAcceso:     s.UsuarioID != "",
 		CreatedAt:       s.CreatedAt,
 	}
 }
@@ -156,6 +158,45 @@ func (h *SociosHandler) Actualizar(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	escribirJSON(w, http.StatusOK, aSocioResp(socio))
+}
+
+type crearAccesoReq struct {
+	Email    string `json:"email"`
+	Password string `json:"password"`
+}
+
+func (h *SociosHandler) CrearAcceso(w http.ResponseWriter, r *http.Request) {
+	gimnasioID := claimsDe(r.Context()).GimnasioID
+	id := chi.URLParam(r, "id")
+
+	var req crearAccesoReq
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		escribirError(w, http.StatusBadRequest, "JSON inválido")
+		return
+	}
+
+	err := h.svc.CrearAcceso(r.Context(), gimnasioID, id, socios.EntradaAcceso{
+		Email:    req.Email,
+		Password: req.Password,
+	})
+	switch {
+	case errors.Is(err, domain.ErrDatosInvalidos):
+		escribirError(w, http.StatusBadRequest, "correo inválido o contraseña muy corta (mínimo 6)")
+		return
+	case errors.Is(err, domain.ErrNoEncontrado):
+		escribirError(w, http.StatusNotFound, "socio no encontrado")
+		return
+	case errors.Is(err, domain.ErrAccesoYaExiste):
+		escribirError(w, http.StatusConflict, "este socio ya tiene acceso a la app")
+		return
+	case errors.Is(err, domain.ErrEmailEnUso):
+		escribirError(w, http.StatusConflict, "ese correo ya está registrado en el gimnasio")
+		return
+	case err != nil:
+		escribirError(w, http.StatusInternalServerError, "no se pudo crear el acceso")
+		return
+	}
+	escribirJSON(w, http.StatusCreated, map[string]bool{"ok": true})
 }
 
 type estadoSocioReq struct {

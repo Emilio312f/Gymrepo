@@ -25,6 +25,12 @@ const List<Modulo> modulos = [
   Modulo('Personal', Icons.badge_outlined, '/personal', true),
 ];
 
+const List<Modulo> modulosSocio = [
+  Modulo('Mi plan', Icons.card_membership_outlined, '/mi'),
+  Modulo('Mis asistencias', Icons.how_to_reg_outlined, '/mi/asistencias'),
+  Modulo('Mis pagos', Icons.payments_outlined, '/mi/pagos'),
+];
+
 class AppShell extends StatelessWidget {
   final Widget child;
 
@@ -61,7 +67,8 @@ class AppShell extends StatelessWidget {
                 fontSize: 17)),
       ),
       drawer: const Drawer(
-          backgroundColor: AppColors.superficie, child: _NavContent()),
+          backgroundColor: AppColors.superficie,
+          child: SafeArea(bottom: false, child: _NavContent())),
       body: child,
     );
   }
@@ -74,6 +81,18 @@ class _NavContent extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final location = GoRouterState.of(context).matchedLocation;
     final usuario = ref.watch(authControllerProvider).usuario;
+    final lista = usuario?.rol == 'socio' ? modulosSocio : modulos;
+
+    String? rutaActiva;
+    for (final m in lista) {
+      final ruta = m.ruta;
+      if (ruta == null) continue;
+      if (location == ruta || location.startsWith('$ruta/')) {
+        if (rutaActiva == null || ruta.length > rutaActiva.length) {
+          rutaActiva = ruta;
+        }
+      }
+    }
 
     return Container(
       color: AppColors.superficie,
@@ -105,13 +124,11 @@ class _NavContent extends ConsumerWidget {
             child: ListView(
               padding: const EdgeInsets.symmetric(vertical: 10),
               children: [
-                for (final m in modulos)
+                for (final m in lista)
                   if (!m.soloAdmin || usuario?.rol == 'admin')
                     _NavTile(
                         modulo: m,
-                        activo: m.ruta != null &&
-                            (location == m.ruta ||
-                                location.startsWith('${m.ruta}/'))),
+                        activo: m.ruta != null && m.ruta == rutaActiva),
               ],
             ),
           ),

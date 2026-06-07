@@ -8,6 +8,7 @@ import '../../membresias/data/membresias_repository.dart';
 import '../../membresias/presentation/registrar_pago_dialog.dart';
 import '../data/socios_repository.dart';
 import 'socios_controller.dart';
+import 'crear_acceso_dialog.dart';
 import 'editar_socio_dialog.dart';
 
 class SocioDetalleScreen extends ConsumerWidget {
@@ -231,6 +232,8 @@ class SocioDetalleScreen extends ConsumerWidget {
               ),
               const SizedBox(height: 16),
               _MembresiaSeccion(socioId: socio.id),
+              const SizedBox(height: 16),
+              _AccesoSeccion(socio: socio),
             ],
           ),
         ),
@@ -416,6 +419,72 @@ class _MembresiaSeccion extends ConsumerWidget {
           Text(v,
               style:
                   const TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
+        ],
+      ),
+    );
+  }
+}
+
+class _AccesoSeccion extends StatelessWidget {
+  final Socio socio;
+
+  const _AccesoSeccion({required this.socio});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: AppColors.superficie,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.borde),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('Acceso a la app',
+              style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
+          const SizedBox(height: 14),
+          if (socio.tieneAcceso)
+            Row(
+              children: [
+                const Icon(Icons.check_circle,
+                    color: AppColors.exito, size: 20),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    socio.email.isEmpty
+                        ? 'El socio ya puede iniciar sesión.'
+                        : 'El socio inicia sesión con ${socio.email}.',
+                    style: const TextStyle(color: AppColors.textoSecundario),
+                  ),
+                ),
+              ],
+            )
+          else
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    socio.activo
+                        ? 'Este socio aún no tiene cuenta para ver su membresía y asistencias.'
+                        : 'Activa al socio para poder darle acceso.',
+                    style: const TextStyle(color: AppColors.textoSecundario),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                FilledButton.icon(
+                  onPressed: socio.activo
+                      ? () => mostrarCrearAccesoDialog(context, socio)
+                      : null,
+                  icon: const Icon(Icons.key_outlined, size: 18),
+                  label: const Text('Crear acceso'),
+                  style:
+                      FilledButton.styleFrom(minimumSize: const Size(0, 42)),
+                ),
+              ],
+            ),
         ],
       ),
     );
