@@ -50,39 +50,62 @@ class HomeScreen extends ConsumerWidget {
             ],
           ),
         ),
-        data: (s) => Wrap(
-          spacing: 16,
-          runSpacing: 16,
-          children: [
-            _MetricCard(
-              icono: Icons.groups_outlined,
-              color: AppColors.acento,
-              valor: '${s.sociosActivos}',
-              etiqueta: 'Socios activos',
-            ),
-            _MetricCard(
-              icono: Icons.payments_outlined,
-              color: AppColors.exito,
-              valor: 'S/ ${s.ingresosMes.toStringAsFixed(2)}',
-              etiqueta: 'Ingresos del mes',
-            ),
-            _MetricCard(
-              icono: Icons.schedule_outlined,
-              color: AppColors.advertencia,
-              valor: '${s.vencenSemana}',
-              etiqueta: 'Vencen esta semana',
-            ),
-            _MetricCard(
-              icono: Icons.event_busy_outlined,
-              color: AppColors.peligro,
-              valor: '${s.vencidas}',
-              etiqueta: 'Membresías vencidas',
-            ),
-          ].animate(interval: 60.ms).fadeIn(duration: 250.ms),
-        ),
+        data: (s) {
+          final tarjetas = [
+            const _MetricData(Icons.groups_outlined, AppColors.acento,
+                'Socios activos'),
+            const _MetricData(Icons.payments_outlined, AppColors.exito,
+                'Ingresos del mes'),
+            const _MetricData(Icons.schedule_outlined, AppColors.advertencia,
+                'Vencen esta semana'),
+            const _MetricData(Icons.event_busy_outlined, AppColors.peligro,
+                'Membresías vencidas'),
+          ];
+          final valores = [
+            '${s.sociosActivos}',
+            'S/ ${s.ingresosMes.toStringAsFixed(2)}',
+            '${s.vencenSemana}',
+            '${s.vencidas}',
+          ];
+          return LayoutBuilder(builder: (context, cons) {
+            final w = cons.maxWidth;
+            final double cardW;
+            if (w < 520) {
+              cardW = w;
+            } else if (w < 820) {
+              cardW = (w - 16) / 2;
+            } else {
+              cardW = 240;
+            }
+            return Wrap(
+              spacing: 16,
+              runSpacing: 16,
+              children: [
+                for (var i = 0; i < tarjetas.length; i++)
+                  SizedBox(
+                    width: cardW,
+                    child: _MetricCard(
+                      icono: tarjetas[i].icono,
+                      color: tarjetas[i].color,
+                      valor: valores[i],
+                      etiqueta: tarjetas[i].etiqueta,
+                    ),
+                  ),
+              ].animate(interval: 60.ms).fadeIn(duration: 250.ms),
+            );
+          });
+        },
       ),
     );
   }
+}
+
+class _MetricData {
+  final IconData icono;
+  final Color color;
+  final String etiqueta;
+
+  const _MetricData(this.icono, this.color, this.etiqueta);
 }
 
 class _MetricCard extends StatelessWidget {
@@ -101,7 +124,6 @@ class _MetricCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 240,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: AppColors.superficie,

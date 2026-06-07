@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/app_theme.dart';
+import '../../../core/widgets/app_page.dart';
 import '../../membresias/data/membresias_repository.dart';
 import '../../membresias/presentation/registrar_pago_dialog.dart';
 import '../data/socios_repository.dart';
@@ -112,86 +113,110 @@ class SocioDetalleScreen extends ConsumerWidget {
           ],
         ),
       ),
-      data: (socio) => SingleChildScrollView(
-        padding: const EdgeInsets.all(28),
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 760),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
+      data: (socio) {
+        final angosta = esAngosta(context);
+        final info = Row(
+          children: [
+            CircleAvatar(
+              radius: 30,
+              backgroundColor: AppColors.acentoSuave,
+              child: Text(socio.iniciales,
+                  style: const TextStyle(
+                      color: AppColors.acento,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 20)),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  IconButton(
-                    onPressed: () => context.go('/socios'),
-                    icon: const Icon(Icons.arrow_back),
-                    color: AppColors.textoSecundario,
-                  ),
-                  const SizedBox(width: 4),
-                  Text('Detalle del socio',
+                  Text(socio.nombreCompleto,
                       style: const TextStyle(
-                          color: AppColors.textoSecundario, fontSize: 14)),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  CircleAvatar(
-                    radius: 30,
-                    backgroundColor: AppColors.acentoSuave,
-                    child: Text(socio.iniciales,
-                        style: const TextStyle(
-                            color: AppColors.acento,
-                            fontWeight: FontWeight.w700,
-                            fontSize: 20)),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(socio.nombreCompleto,
-                            style: const TextStyle(
-                                fontSize: 22, fontWeight: FontWeight.w700)),
-                        const SizedBox(height: 4),
-                        Row(
-                          children: [
-                            Text('${socio.codigo} · DNI ${socio.documento}',
-                                style: const TextStyle(
-                                    color: AppColors.textoSecundario)),
-                            const SizedBox(width: 10),
-                            _EstadoChip(activo: socio.activo),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                  OutlinedButton.icon(
-                    onPressed: () => mostrarEditarSocioDialog(context, socio),
-                    icon: const Icon(Icons.edit_outlined, size: 18),
-                    label: const Text('Editar'),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: AppColors.acento,
-                      side: const BorderSide(color: AppColors.borde),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  OutlinedButton.icon(
-                    onPressed: () => _cambiarEstado(context, ref, socio),
-                    icon: Icon(
-                        socio.activo
-                            ? Icons.block
-                            : Icons.check_circle_outline,
-                        size: 18),
-                    label: Text(socio.activo ? 'Deshabilitar' : 'Activar'),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor:
-                          socio.activo ? AppColors.peligro : AppColors.exito,
-                      side: const BorderSide(color: AppColors.borde),
-                    ),
+                          fontSize: 22, fontWeight: FontWeight.w700)),
+                  const SizedBox(height: 6),
+                  Wrap(
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    spacing: 10,
+                    runSpacing: 6,
+                    children: [
+                      Text('${socio.codigo} · DNI ${socio.documento}',
+                          style: const TextStyle(
+                              color: AppColors.textoSecundario)),
+                      _EstadoChip(activo: socio.activo),
+                    ],
                   ),
                 ],
               ),
-              const SizedBox(height: 28),
+            ),
+          ],
+        );
+
+        final btnEditar = OutlinedButton.icon(
+          onPressed: () => mostrarEditarSocioDialog(context, socio),
+          icon: const Icon(Icons.edit_outlined, size: 18),
+          label: const Text('Editar'),
+          style: OutlinedButton.styleFrom(
+            minimumSize: const Size(0, 44),
+            foregroundColor: AppColors.acento,
+            side: const BorderSide(color: AppColors.borde),
+          ),
+        );
+        final btnEstado = OutlinedButton.icon(
+          onPressed: () => _cambiarEstado(context, ref, socio),
+          icon: Icon(
+              socio.activo ? Icons.block : Icons.check_circle_outline,
+              size: 18),
+          label: Text(socio.activo ? 'Deshabilitar' : 'Activar'),
+          style: OutlinedButton.styleFrom(
+            minimumSize: const Size(0, 44),
+            foregroundColor:
+                socio.activo ? AppColors.peligro : AppColors.exito,
+            side: const BorderSide(color: AppColors.borde),
+          ),
+        );
+
+        return SingleChildScrollView(
+          padding: EdgeInsets.all(angosta ? 16 : 28),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 760),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    IconButton(
+                      onPressed: () => context.go('/socios'),
+                      icon: const Icon(Icons.arrow_back),
+                      color: AppColors.textoSecundario,
+                    ),
+                    const SizedBox(width: 4),
+                    const Text('Detalle del socio',
+                        style: TextStyle(
+                            color: AppColors.textoSecundario, fontSize: 14)),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                if (angosta) ...[
+                  info,
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Expanded(child: btnEditar),
+                      const SizedBox(width: 10),
+                      Expanded(child: btnEstado),
+                    ],
+                  ),
+                ] else
+                  Row(
+                    children: [
+                      Expanded(child: info),
+                      btnEditar,
+                      const SizedBox(width: 10),
+                      btnEstado,
+                    ],
+                  ),
+                const SizedBox(height: 28),
               _Seccion(
                 titulo: 'Datos personales',
                 filas: [
@@ -209,7 +234,8 @@ class SocioDetalleScreen extends ConsumerWidget {
             ],
           ),
         ),
-      ),
+      );
+      },
     );
   }
 
@@ -228,6 +254,7 @@ class _Seccion extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final angosta = esAngosta(context);
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(20),
@@ -246,22 +273,37 @@ class _Seccion extends StatelessWidget {
           for (final f in filas) ...[
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 7),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  SizedBox(
-                    width: 180,
-                    child: Text(f.$1,
-                        style: const TextStyle(
-                            color: AppColors.textoSecundario, fontSize: 14)),
-                  ),
-                  Expanded(
-                    child: Text(f.$2,
-                        style: const TextStyle(
-                            fontSize: 14, fontWeight: FontWeight.w500)),
-                  ),
-                ],
-              ),
+              child: angosta
+                  ? Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(f.$1,
+                            style: const TextStyle(
+                                color: AppColors.textoSecundario,
+                                fontSize: 13)),
+                        const SizedBox(height: 2),
+                        Text(f.$2,
+                            style: const TextStyle(
+                                fontSize: 14, fontWeight: FontWeight.w500)),
+                      ],
+                    )
+                  : Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        SizedBox(
+                          width: 180,
+                          child: Text(f.$1,
+                              style: const TextStyle(
+                                  color: AppColors.textoSecundario,
+                                  fontSize: 14)),
+                        ),
+                        Expanded(
+                          child: Text(f.$2,
+                              style: const TextStyle(
+                                  fontSize: 14, fontWeight: FontWeight.w500)),
+                        ),
+                      ],
+                    ),
             ),
             if (f != filas.last)
               const Divider(height: 1, color: AppColors.borde),
